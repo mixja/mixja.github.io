@@ -1,27 +1,23 @@
-title:            Site Title
-description:      Describe your website here.
+title:            Pseudo Code
+description:      Navigating the programmable web
 disqus_shortname: hpstrtheme
 reading_time:     true
 words_per_minute: 200
 # Your site's domain goes here (eg: //mmistakes.github.io, http://mademistakes.com, etc)
 # When testing locally leave blank or use http://localhost:4000
-url:
+url: //
 
 # Owner/author information
 owner:
-  name:           Your Name
+  name:           Justin Menga
   avatar:         avatar.jpg
   bio:            "Your bio goes here. It shouldn't be super long but a good two sentences or two should suffice."
-  email:          you@email.com
+  email:          justin.menga@gmail.com
   # Social networking links used in footer. Update and remove as you like.
-  twitter:        
-  facebook:       
-  github:         
-  stackexchange:  
-  linkedin:       
-  instagram:      
-  flickr:         
-  tumblr:         
+  twitter:        https://twitter.com/jmenga
+  facebook:       https://www.facebook.com/justin.menga.9
+  github:         https://github.com/mixja
+  linkedin:       https://nz.linkedin.com/pub/justin-menga/54/bb5/90b
   # google plus id, include the '+', eg +mmistakes
   google_plus:    +yourid
 
@@ -35,7 +31,7 @@ google_verify:
 bing_verify:         
 
 # http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-timezone:    America/New_York
+timezone:    Pacific/Auckland
 future:      true
 highlighter: pygments
 markdown:    kramdown
