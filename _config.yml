@@ -14,10 +14,10 @@ owner:
   bio:            "Full Stack Technologist, Functional Programmer, Cloud Architect, Networking Expert."
   email:          justin.menga@gmail.com
   # Social networking links used in footer. Update and remove as you like.
-  twitter:        https://twitter.com/jmenga
-  facebook:       https://www.facebook.com/justin.menga.9
-  github:         https://github.com/mixja
-  linkedin:       https://nz.linkedin.com/pub/justin-menga/54/bb5/90b
+  twitter:        jmenga
+  facebook:       justin.menga.9
+  github:         mixja
+  linkedin:       jmenga
   # google plus id, include the '+', eg +mmistakes
   google_plus:    +100095810580597009179
 
