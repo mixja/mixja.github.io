@@ -1,7 +1,7 @@
 title:            Pseudo Code
 description:      Navigating the programmable web
 disqus_shortname: hpstrtheme
-reading_time:     true
+reading_time:     false
 words_per_minute: 200
 # Your site's domain goes here (eg: //mmistakes.github.io, http://mademistakes.com, etc)
 # When testing locally leave blank or use http://localhost:4000
@@ -11,7 +11,7 @@ url:
 owner:
   name:           Justin Menga
   avatar:         avatar.jpg
-  bio:            "Your bio goes here. It shouldn't be super long but a good two sentences or two should suffice."
+  bio:            "Full Stack Technologist, Functional Programmer, Cloud Architect, Networking Expert."
   email:          justin.menga@gmail.com
   # Social networking links used in footer. Update and remove as you like.
   twitter:        https://twitter.com/jmenga
@@ -19,7 +19,7 @@ owner:
   github:         https://github.com/mixja
   linkedin:       https://nz.linkedin.com/pub/justin-menga/54/bb5/90b
   # google plus id, include the '+', eg +mmistakes
-  google_plus:    +yourid
+  google_plus:    +100095810580597009179
 
 # Background image to be tiled on all pages
 background: 

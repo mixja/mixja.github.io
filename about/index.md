@@ -1,34 +1,22 @@
 ---
 layout: page
-title: About the Jekyll Theme
+title: About Me
 image:
   feature: abstract-5.jpg
-  credit: dargadgetz
-  creditlink: http://www.dargadgetz.com/ios-7-abstract-wallpaper-pack-for-iphone-5-and-ipod-touch-retina/
+  credit: 
+  creditlink: 
 comments: false
-modified: 2014-12-24
+modified: 2015-07-05
 ---
 
-They say three times the charm, so here is another free responsive Jekyll blog theme for you. I've learned a ton since open sourcing my first two themes [on Github](http://github.com/mmistakes), and wanted to try a few new things this time around. 
+I am an IT consultant, architect and developer with a wide array of skills and experience across a varied range of industries. My passion has always been focused around developing and delivering exciting new products and services based upon the very latest innovations in technology that deliver outstanding value and customer experience.
 
-If you've used any of [my other themes](http://mademistakes.com/work/jekyll-themes/) most of this should be familiar territory...
+## My Skills:
 
-## What HPSTR brings to the table:
+* Technology Leadership - I always strive to keep in touch with the latest in technology trends and adopt a strong holistic and strategic approach in developing technology solutions and roadmaps. I am able to lead and inspire technical teams to deliver great solutions and outcomes.
+* IT Architecture - very strong Enterprise, Application, Network, Infrastructure and Security architecture skills and experience. 
+* Application Development - strong application development skills in web, .NET and most recently Java/Scala environments. A strong focus on functional programming patterns and leveraging OSS platforms. A strong believer in next generation DevOps and agile development practices.
+* Customer First – I have many years’ experience operating in pre-sales, consulting and post-sales functions. By principle I always consider customer requirements, experience and impact first and foremost when designing solutions. Great solutions must provide a great customer experience first and foremost.
+* Documentation – I have excellent documentation and diagramming skills, having written several large technical publications. My documentation is thorough, highly attentive to detail, and presents complex subject matter in a manner that ensures key concepts are well understood and easy to grasp.
 
-* Responsive templates for post, page, and post index `_layouts`. Looks great on mobile, tablet, and desktop devices.
-* Gracefully degrads in older browsers. Compatible with Internet Explorer 8+ and all modern browsers.  
-* Modern and minimal design.
-* Sweet animated menu.
-* Background image support.
-* Readable typography to make your words shine.
-* Support for large images to call out your favorite posts.
-* Built-in support for Sass courtesy of Jekyll 2.x.
-* Optional [Disqus](http://disqus.com) comments.
-* Simple and clear permalink structure[^1].
-* [Open Graph](https://developers.facebook.com/docs/opengraph/) and [Twitter Cards](https://dev.twitter.com/docs/cards) support for a better social sharing experience.
-* Simple [custom 404 page]({{ site.url }}/404.html) to get you started.
-* Stylesheets for Pygments and Coderay [syntax highlighting]({{ site.url }}/code-highlighting-post/) to make your code examples look snazzy.
-
-<div markdown="0"><a href="{{ site.url }}/theme-setup/" class="btn btn-info">Theme Setup</a> <a href="https://github.com/mmistakes/hpstr-jekyll-theme" class="btn btn-success">Download HPSTR</a></div>
-
-[^1]: Example: *domain.com/category-name/post-title*
+At heart, I’m a technologist with a focus on end-to-end, yet able to dig deep and solve complex problems as required. I have the knowledge, understanding and ability to lead and inspire others to architect and build complex technology solutions that span multiple technology domains.
