@@ -2,11 +2,31 @@
 published: false
 ---
 
-## Building an EAP-SIM Demo - Part 1
+## Building an EAP-SIM Demo - Introduction
 
-Welcome to this x part series on building an EAP-SIM demonstration lab.
+Welcome to this 6 part series on building an EAP-SIM demonstration lab.
 
-In this series, I'll demonstrate how to build a simple lab that will enable you to test and demonstrate authenticating to a Wi-Fi network using EAP-SIM.
+In this series, I'll demonstrate how to build a simple lab that will enable you to test and demonstrate authenticating to a Wi-Fi network using EAP-SIM using real wireless infrastructure and mobile phones.
+
+This introductory article will introduce the environment we will build and describe the prerequisites you will need if you want to build your own demonstration lab.
+
+### Series Overview
+
+Here's a list of each of the articles in this series:
+
+1. Introduction (this article)
+2. EAP-SIM Authentication Overview
+3. Reading your SIM Card
+4. Building the Wireless Infrastructure
+5. Configuring the RADIUS Server
+6. Configuring an iPhone for EAP-SIM
+
+### Environment
+
+A picture is worth a thousand words so lets get straight to it:
+
+
+
 
 ### Prerequisites
 
@@ -18,11 +38,9 @@ You are going to need a few pieces of hardware and software for this lab.
 - **Cisco vWLC** - if you are a registered Cisco user you should be able to [download this from Cisco here](https://software.cisco.com/download/release.html?mdfid=284464214&softwareid=280926587&release=8.1.111.0).  If you don't have a Cisco account or your account does not have privileges, Google is your friend.  I'll be running this on VMWare Fusion 7.1.2 (OS X) in this demonstration.
 - **Docker/Vagrant** - I'll use these tools to bootstrap prebuilt images I've created for FreeRADIUS 3.x.  Images are available for Docker and Vagrant.
 
-### Environment
 
-I'll be using OS X exclusively in this demonstration.
 
-Here is a diagram of the lab layout:
+
 
 
 
