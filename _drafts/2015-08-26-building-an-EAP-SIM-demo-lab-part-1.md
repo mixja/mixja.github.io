@@ -23,7 +23,7 @@ Here's a list of each of the articles in this series:
 
 ### Environment
 
-A picture is worth a thousand words so lets get straight to it:
+A picture is worth a thousand words so lets get straight to it - here's a high level view of what we are going to build.
 
 
 
