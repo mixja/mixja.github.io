@@ -6,7 +6,9 @@ tags:
   - dpdk
   - seastar
   - networking
+published: true
 ---
+
 
 
 ## Introduction
@@ -289,9 +291,9 @@ Finally you need to build the DPDK target environment - this is made very easy b
 
 In the setup.sh script you need to perform the following steps:
 
-1. Option [10] - builds a Linux 64-bit target using GCC.  The target will be created in a directory called `x86_64-native-linuxapp-gcc` in the DPDK source root.
-2. Option [13] - loads the IGB_UIO kernel module
-3. Option [19] - allows you to bind your network interface to DPDK
+1. **Option [10]** - builds a Linux 64-bit target using GCC.  The target will be created in a directory called `x86_64-native-linuxapp-gcc` in the DPDK source root.
+2. **Option [13]** - loads the IGB_UIO kernel module
+3. **Option [19]** - allows you to bind your network interface to DPDK
 
 The example below demonstrates the final step of binding a network interface to DPDK.  
 
@@ -316,7 +318,7 @@ OK
 Press enter to continue ...
 {% endhighlight %}
 
-You can use option [19] again to verify the network interface is now bound to DPDK:
+You can use **option [19]** again to verify the network interface is now bound to DPDK:
 
 {% highlight console %}
 Network devices using DPDK-compatible driver
@@ -334,7 +336,7 @@ Other network devices
 Enter PCI address of device to bind to IGB UIO driver: 
 {% endhighlight %}
 
-Once you are done, choose option [31] to exit the setup script.
+Once you are done, choose **option [31]** to exit the setup script.
 
 ## Building Seastar
 You are now ready to configure and build Seastar.  
