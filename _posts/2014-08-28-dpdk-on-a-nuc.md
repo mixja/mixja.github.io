@@ -53,7 +53,7 @@ Most of the examples in the Seastar [documentation](https://github.com/cloudius-
 
 Both Seastar and DPDK need to be built from source, so you need to install a number of development related dependencies.
 
-When building DPDK, you need to create a kernel module so it's important to install the relevent kernel development packages that is matched to your system kernel.  This can be achieved most quickly by first upgrading your system and then installing the kernel development packages:  
+When building DPDK, you need to create a kernel module so it's important to install the relevent kernel development packages that are matched to your system kernel.  This can be achieved most quickly by first upgrading your system and then installing the kernel development packages:  
 
 {% highlight console %}
 dnf upgrade -y
@@ -62,7 +62,7 @@ dnf install kernel-devel.x86_64 -y
 
 If you miss the upgrade step, chances are your system kernel will be an older kernel version than the kernel development packages and things will break.
 
-Seastar has a number of development dependencies, which are listed in the Fedora 21 section of the main README file on the Seastar Github home project page:
+Seastar has a number of development dependencies, which are listed in the Fedora 21 section of the main README file on the [Seastar Github home project page](https://github.com/cloudius-systems/seastar):
 
 {% highlight console %}
 dnf install gcc-c++ libaio-devel ninja-build ragel hwloc-devel numactl-devel \
