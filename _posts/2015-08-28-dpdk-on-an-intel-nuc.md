@@ -18,7 +18,7 @@ The DPDK (Data Plane Development Kit) is an exciting project that delivers high 
 If you are not familiar with DPDK, you can find out more information at the following links:
 
 - [http://dpdk.org](http://dpdk.org)
-- [http://http://dpdk.readthedocs.org/en/latest/index.html](http://dpdk.readthedocs.org/en/latest/index.html)
+- [http://dpdk.readthedocs.org/en/latest/index.html](http://dpdk.readthedocs.org/en/latest/index.html)
 
 In this article, I will show you how to build and configure DPDK and run a simple web application using the Seastar application framework.
 
