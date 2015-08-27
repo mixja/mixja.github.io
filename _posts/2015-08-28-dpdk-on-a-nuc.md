@@ -66,8 +66,7 @@ Seastar has a number of development dependencies, which are listed in the Fedora
 
 {% highlight console %}
 dnf install gcc-c++ libaio-devel ninja-build ragel hwloc-devel numactl-devel \
-                    libpciaccess-devel cryptopp-devel xen-devel boost-devel \
-                    libxml2-devel -y
+            libpciaccess-devel cryptopp-devel xen-devel boost-devel libxml2-devel -y
 {% endhighlight %}
 
 In addition to the above, you need Git (to download the Seastar and DPDK source) and a couple of other libraries that are required when building Seastar on Fedora 22:
