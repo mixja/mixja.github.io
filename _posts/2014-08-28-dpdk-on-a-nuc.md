@@ -1,4 +1,5 @@
 ---
+layout: post
 title: DPDK on an Intel NUC
 description: How to build DPDK and Seastar on an Intel NUC
 tags: 
