@@ -386,7 +386,6 @@ seastar# build/release/apps/httpd/httpd \
 {% endhighlight %}
 
 There's quite a few options above you need to specify.  Note that you can use the `httpd --help` command to review all of the available options.  Each of the  flags used in the example are described below:
-which are described below:
 
 - `--network-stack native` - this configures the application to run using the Seastar native network stack, which is required when using DPDK.
 - `--dpdk-pmd` - this configures the application to use DPDK
