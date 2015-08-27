@@ -6,6 +6,8 @@ tags:
   - dpdk
   - seastar
   - networking
+  - intel
+  - nuc
 published: true
 ---
 
