@@ -11,8 +11,6 @@ tags:
 published: true
 ---
 
-
-
 ## Introduction
 
 The DPDK (Data Plane Development Kit) is an exciting project that delivers high performance networking by allowing low-level networking functions to be performed in user space applications, instead of in the Linux kernel.  
@@ -372,7 +370,7 @@ The build will take a few minutes - you can see above 82 libraries are built.
 If you omitted the `--with` flag in the configuration (meaning build everything) you would need to build 148 libraries.
 
 ## Running Seastar
-At this point, you are ready to run Seastar.  Seastar includes a basic example web application, which you can run as demonstrated below:
+At this point, you are ready to run Seastar.  Seastar includes a basic [example web application](https://github.com/cloudius-systems/seastar/blob/master/apps/httpd/main.cc), which you can run as demonstrated below:
 
 {% highlight console %}
 seastar# build/release/apps/httpd/httpd \
