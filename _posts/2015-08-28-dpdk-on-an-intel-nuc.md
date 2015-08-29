@@ -206,6 +206,8 @@ git clone http://github.com/mixja/dpdk
 git clone https://github.com/cloudius-systems/seastar.git
 {% endhighlight %}
 
+Alternatively you can apply this [patch](https://gist.github.com/mixja/048ae1d2486cecb78e52) to the original DPDK source (bearing in mind I patched from the 2.1.0 release)
+
 ## Building DPDK
 
 At this point, you need to down the network interface that is to be used by DPDK.  
