@@ -23,7 +23,7 @@ If you are not familiar with DPDK, you can find out more information at the foll
 In this article, I will show you how to build and configure DPDK and run a simple web application using the Seastar application framework.
 
 ## Seastar
-[Seastar](http://www.seastar-project.org) is a very young [open source project](https://github.com/cloudius-systems/seastar) created by Cloudius Systems, the company behind [OSv](http://osv.io).  
+[Seastar](http://www.seastar-project.org) <a href="http://www.seastar-project.org" target="_blank">Seastar</a> is a very young [open source project](https://github.com/cloudius-systems/seastar) created by Cloudius Systems, the company behind [OSv](http://osv.io).  
 
 As described on the project home page:
 
