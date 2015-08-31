@@ -229,7 +229,7 @@ The `-instances 2` flag fires up two instances of the Verticle, ensuring we can 
 
 ### Seastar
 
-Seastar is installed and configured using the same instructions in my [previous blog post](http://pseudo.co.de/dpdk-on-an-intel-nuc/).  Note for this test I used commit [`696ab29b4ddd0a068d4e8860b7bab5fef658aa87`](https://github.com/cloudius-systems/seastar/commit/696ab29b4ddd0a068d4e8860b7bab5fef658aa87)
+Seastar is installed and configured using the same instructions in my [previous blog post](http://pseudo.co.de/dpdk-on-an-intel-nuc/).  Note for this test I built Seastar using commit [`696ab29b4ddd0a068d4e8860b7bab5fef658aa87`](https://github.com/cloudius-systems/seastar/commit/696ab29b4ddd0a068d4e8860b7bab5fef658aa87)
 
 After you have built Seastar, to run the sample Seastar web application using the Linux networking stack (note the web application will be reachable on the operating system network IP address):
 
