@@ -144,7 +144,7 @@ GRUB_CMDLINE_LINUX_DEFAULT="default_hugepagesz=2M hugepagesz=2M hugepages=512"
 GRUB_CMDLINE_LINUX_DEFAULT="default_hugepagesz=1G hugepagesz=1G hugepages=1"
 {% endhighlight %}
 
-Both examples above allocate 1GB of memory to hugepages.  In my case, I allocated a single 1GB hugepage.
+Both examples above allocate 1GB of memory in total to hugepages.  In my case, I allocated a single 1GB hugepage.
 
 Next you need to update your Grub configuration.  Note these instructions are for Fedora.
 
@@ -209,17 +209,7 @@ git clone https://github.com/cloudius-systems/seastar.git
 Alternatively you can apply this [patch](https://gist.github.com/mixja/048ae1d2486cecb78e52) to the original DPDK source (bearing in mind I patched from the 2.1.0 release)
 
 ## Building DPDK
-
-At this point, you need to down the network interface that is to be used by DPDK.  
-
-This will allow DPDK to take control of the NIC, outside of the Linux kernel:
-
-{% highlight console %}
-[root@localhost dpdk]# ifdown eno1
-Device 'eno1' successfully disconnected.
-{% endhighlight %}
-
-Next you need to configure your DPDK build options - this is performed by editing the `config/common_linuxapp` file and modifying the following entries:
+To build DPDK you first need to configure your DPDK build options - this is performed by editing the `config/common_linuxapp` file in the dpdk source root and modifying the following entries:
 
 {% highlight console %}
 CONFIG_RTE_LIBTRE_KNI=n
@@ -229,115 +219,23 @@ CONFIG_RTE_MAX_MEMSEG=4096
 
 The configuration settings above are based upon instructions included in the Seastar project documentation.
 
-Finally you need to build the DPDK target environment - this is made very easy by using the `tools/setup.sh` script included in the DPDK source.  
+With the configuration in place you need to build the DPDK target environment:  
 
 {% highlight console %}
-[root@localhost dpdk]# tools/setup.sh
-
-------------------------------------------------------------------------------
- RTE_SDK exported as /root/dpdk
-------------------------------------------------------------------------------
-----------------------------------------------------------
- Step 1: Select the DPDK environment to build
-----------------------------------------------------------
-[1] i686-native-linuxapp-gcc
-[2] i686-native-linuxapp-icc
-[3] ppc_64-power8-linuxapp-gcc
-[4] tile-tilegx-linuxapp-gcc
-[5] x86_64-ivshmem-linuxapp-gcc
-[6] x86_64-ivshmem-linuxapp-icc
-[7] x86_64-native-bsdapp-clang
-[8] x86_64-native-bsdapp-gcc
-[9] x86_64-native-linuxapp-clang
-[10] x86_64-native-linuxapp-gcc
-[11] x86_64-native-linuxapp-icc
-[12] x86_x32-native-linuxapp-gcc
-
-----------------------------------------------------------
- Step 2: Setup linuxapp environment
-----------------------------------------------------------
-[13] Insert IGB UIO module
-[14] Insert VFIO module
-[15] Insert KNI module
-[16] Setup hugepage mappings for non-NUMA systems
-[17] Setup hugepage mappings for NUMA systems
-[18] Display current Ethernet device settings
-[19] Bind Ethernet device to IGB UIO module
-[20] Bind Ethernet device to VFIO module
-[21] Setup VFIO permissions
-
-----------------------------------------------------------
- Step 3: Run test application for linuxapp environment
-----------------------------------------------------------
-[22] Run test application ($RTE_TARGET/app/test)
-[23] Run testpmd application in interactive mode ($RTE_TARGET/app/testpmd)
-
-----------------------------------------------------------
- Step 4: Other tools
-----------------------------------------------------------
-[24] List hugepage info from /proc/meminfo
-
-----------------------------------------------------------
- Step 5: Uninstall and system cleanup
-----------------------------------------------------------
-[25] Uninstall all targets
-[26] Unbind NICs from IGB UIO or VFIO driver
-[27] Remove IGB UIO module
-[28] Remove VFIO module
-[29] Remove KNI module
-[30] Remove hugepage mappings
-
-[31] Exit Script
+[root@localhost dpdk]# make install T=x86_64-native-linuxapp-gcc
+================== Installing x86_64-native-linuxapp-gcc
+Configuration done
+== Build lib
+== Build lib/librte_compat
+...
+...
+== Build app/proc_info
+  CC main.o
+  LD proc_info
+  INSTALL-APP proc_info
+  INSTALL-MAP proc_info.map
+Build complete [x86_64-native-linuxapp-gcc]
 {% endhighlight %}
-
-In the setup.sh script you need to perform the following steps:
-
-1. **Option [10]** - builds a Linux 64-bit target using GCC.  The target will be created in a directory called `x86_64-native-linuxapp-gcc` in the DPDK source root.
-2. **Option [13]** - loads the IGB_UIO kernel module
-3. **Option [19]** - allows you to bind your network interface to DPDK
-
-The example below demonstrates the final step of binding a network interface to DPDK.  
-
-Note that you need to enter the PCI address of the network interface card (**00:19.0** in this example):
-
-{% highlight console %}
-Network devices using DPDK-compatible driver
-============================================
-<none>
-
-Network devices using kernel driver
-===================================
-0000:00:19.0 'Ethernet Connection I218-V' if=eno1 drv=e1000e unused=igb_uio
-
-Other network devices
-=====================
-<none>
-
-Enter PCI address of device to bind to IGB UIO driver: 00:19.0
-OK
-
-Press enter to continue ...
-{% endhighlight %}
-
-You can use **option [19]** again to verify the network interface is now bound to DPDK:
-
-{% highlight console %}
-Network devices using DPDK-compatible driver
-============================================
-0000:00:19.0 'Ethernet Connection I218-V' if=eno1 drv=e1000e unused=igb_uio
-
-Network devices using kernel driver
-===================================
-<none>
-
-Other network devices
-=====================
-<none>
-
-Enter PCI address of device to bind to IGB UIO driver: 
-{% endhighlight %}
-
-Once you are done, choose **option [31]** to exit the setup script.
 
 ## Building Seastar
 You are now ready to configure and build Seastar.  
@@ -370,6 +268,47 @@ seastar#
 The build will take a few minutes - you can see above 82 libraries are built.
 
 If you omitted the `--with` flag in the configuration (meaning build everything) you would need to build 148 libraries.
+
+## Binding the Network Interface to DPDK
+With DPDK and Seastar built, you are almost ready to run Seastar.  Before doing so, you must bind the NUC network interface to DPDK.
+
+First, you need to down the network interface that is to be used by DPDK.   
+
+This will allow DPDK to take control of the NIC, outside of the Linux kernel:
+
+{% highlight console %}
+[root@localhost dpdk]# ifdown eno1
+Device 'eno1' successfully disconnected.
+{% endhighlight %}
+
+Next, you need to insert the necessary kernel modules required for DPDK.  Note that the IGB_UIO module is located in the DPDK target you built previously:
+
+{% highlight console %}
+[root@localhost dpdk]# modprobe uio
+[root@localhost dpdk]# insmod x86_64-native-linuxapp-gcc/kmod/igb_uio.ko
+{% endhighlight %}
+
+Finally, you can bind the interface to DPDK using the `dpdk_nic_bind.py` tools script: 
+
+{% highlight console %}
+[root@localhost dpdk]# tools/dpdk_nic_bind.py --bind=igb_uio eno1
+[root@localhost dpdk]# tools/dpdk_nic_bind.py --status
+
+Network devices using DPDK-compatible driver
+============================================
+0000:00:19.0 'Ethernet Connection I218-V' if=eno1 drv=igb_uio unused=e1000e
+
+Network devices using kernel driver
+===================================
+<none>
+
+Other network devices
+=====================
+<none>
+{% endhighlight %}
+
+Running the script with the `--bind` flag binds the specified device `eno1` to the specified driver `igb_uio`.  
+Specifying the `--status` flag shows that the network interface is now bound to the IGB_UIO driver. 
 
 ## Running Seastar
 At this point, you are ready to run Seastar.  Seastar includes a basic [example web application](https://github.com/cloudius-systems/seastar/blob/master/apps/httpd/main.cc), which you can run as demonstrated below:
@@ -457,11 +396,14 @@ $ curl 192.168.1.200:10000
 And a quick performance test should show you some pretty impressive numbers:
 
 {% highlight console %}
-$ weighttp -n 1000000 -c 100 -k 192.168.1.200:10000
+$ weighttp -n 1000000 -c 500 -t 4 -k 192.168.1.200:10000
 weighttp - a lightweight and simple webserver benchmarking tool
 
 starting benchmark...
-spawning thread #1: 100 concurrent requests, 1000000 total requests
+spawning thread #1: 125 concurrent requests, 250000 total requests
+spawning thread #2: 125 concurrent requests, 250000 total requests
+spawning thread #3: 125 concurrent requests, 250000 total requests
+spawning thread #4: 125 concurrent requests, 250000 total requests
 progress:  10% done
 progress:  20% done
 progress:  30% done
@@ -473,14 +415,14 @@ progress:  80% done
 progress:  90% done
 progress: 100% done
 
-finished in 6 sec, 706 millisec and 434 microsec, 149110 req/s, 18347 kbyte/s
+finished in 5 sec, 208 millisec and 134 microsec, 192007 req/s, 23625 kbyte/s
 requests: 1000000 total, 1000000 started, 1000000 done, 1000000 succeeded, 0 failed, 0 errored
 status codes: 1000000 2xx, 0 3xx, 0 4xx, 0 5xx
 traffic: 126000000 bytes total, 119000000 bytes http, 7000000 bytes data
 {% endhighlight %}
 
-**150,000 requests per second - not too bad for $300US!**
+Here I chuck 1M requests at the application over 500 concurrent connections running on four threads - **190,000+ requests per second - not too bad for a $300US computer!**
 
-In an upcoming post, I'll publish some performance stats comparing Node.js, Vert.x, Seastar and Seastar with DPDK.  
+In an upcoming post, I'll publish some performance stats comparing [Node.js](http://nodejs.org/), Go (using [Gin web framework](https://github.com/gin-gonic/gin)), [Vert.x](http://vertx.io), Seastar and Seastar with DPDK.  
 
 I'm sure you already know who the winner will be ;)
