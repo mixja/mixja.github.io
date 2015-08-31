@@ -252,7 +252,7 @@ Seastar HTTP server listening on port 10000 ...
 
 The `--smp 2` flag ensures the application will drive both CPU cores.
 
-To run the sample Seastar web application using the DPDK networking stack (note the web applicatino will be reachable on the IP address specified when running the application):
+To run the sample Seastar web application using the DPDK networking stack (note the web application will be reachable on the IP address specified when running the application):
 
 {% highlight console %}
 [root@localhost ~]# ifdown eno1
