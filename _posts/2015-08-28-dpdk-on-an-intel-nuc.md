@@ -423,6 +423,6 @@ traffic: 126000000 bytes total, 119000000 bytes http, 7000000 bytes data
 
 Here I chuck 1M requests at the application over 500 concurrent connections running on four threads - **190,000+ requests per second - not too bad for a $300US computer!**
 
-In an upcoming post, I'll publish some performance stats comparing [Node.js](http://nodejs.org/), Go (using [Gin web framework](https://github.com/gin-gonic/gin)), [Vert.x](http://vertx.io), Seastar and Seastar with DPDK.  
+[In this post](http://pseudo.co.de/seastar-dpdk-web-framework-showdown/), I've published some performance stats comparing [Node.js](http://nodejs.org/), Go (using [Gin web framework](https://github.com/gin-gonic/gin)), [Vert.x](http://vertx.io), Seastar and Seastar with DPDK.  
 
 I'm sure you already know who the winner will be ;)
