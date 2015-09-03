@@ -37,6 +37,7 @@ You are going to need a few pieces of hardware and software for this lab.
 - **Wireless Access Point** - in this demonstration I'll use a Cisco Aironet 3502 access point that is paired with a Cisco Virtual Wireless LAN Controller (vWLC), but any access point that supports 802.1x should be able to work.
 - **Cisco vWLC** - if you are a registered Cisco user you should be able to [download this from Cisco here](https://software.cisco.com/download/release.html?mdfid=284464214&softwareid=280926587&release=8.1.111.0).  If you don't have a Cisco account or your account does not have privileges, Google is your friend.  I'll be running this on VMWare Fusion 7.1.2 (OS X) in this demonstration.
 - **Docker/Vagrant** - I'll use these tools to bootstrap prebuilt images I've created for FreeRADIUS 3.x.  Images are available for Docker and Vagrant.
+- **OS X** - I'll be using OS X Yosemite 10.10.5 exclusively to drive everything in this demonstration, but there's no reason you can't perform almost all of this lab on another operating system.
 
 
 
