@@ -12,6 +12,8 @@ tags:
   - gin
   - vert.x
   - node.js
+  - sdn
+  - nfv
 published: true
 ---
 

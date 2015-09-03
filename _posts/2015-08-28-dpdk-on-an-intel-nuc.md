@@ -8,6 +8,8 @@ tags:
   - networking
   - intel
   - nuc
+  - sdn
+  - nfv
 published: true
 ---
 
