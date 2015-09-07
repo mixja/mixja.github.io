@@ -271,7 +271,7 @@ The build will take a few minutes - you can see above 82 libraries are built.
 
 If you omitted the `--with` flag in the configuration (meaning build everything) you would need to build 148 libraries.
 
-## Binding the Network Interface to DPDK
+## <a name="binding-dpdk"></a>Binding the Network Interface to DPDK
 With DPDK and Seastar built, you are almost ready to run Seastar.  Before doing so, you must bind the NUC network interface to DPDK.
 
 First, you need to down the network interface that is to be used by DPDK.   
@@ -312,7 +312,7 @@ Other network devices
 Running the script with the `--bind` flag binds the specified device `eno1` to the specified driver `igb_uio`.  
 Specifying the `--status` flag shows that the network interface is now bound to the IGB_UIO driver. 
 
-## Running Seastar
+## <a name="running-seastar"></a>Running Seastar
 At this point, you are ready to run Seastar.  Seastar includes a basic [example web application](https://github.com/cloudius-systems/seastar/blob/master/apps/httpd/main.cc), which you can run as demonstrated below:
 
 {% highlight console %}
@@ -387,7 +387,7 @@ Port 0 Link Up - speed 1000 Mbps - full-duplex
 Seastar HTTP server listening on port 10000 ...
 {% endhighlight %}
 
-## Testing Seastar
+## <a name="testing-seastar"></a>Testing Seastar
 The sample HTTP application is now up and running.  Running a basic test should demonstrate the application is working:
 
 {% highlight console %}
