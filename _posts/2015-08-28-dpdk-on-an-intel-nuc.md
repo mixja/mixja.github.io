@@ -24,7 +24,7 @@ If you are not familiar with DPDK, you can find out more information at the foll
 
 In this article, I will show you how to build and configure DPDK and run a simple web application using the Seastar application framework.
 
-**UPDATE: I have created an [Ansible playbook](https://github.com/mixja/ansible-dpdk-seastar) that automates the tasks described in this article** 
+**[UPDATE: I have created an Ansible playbook that automates the tasks described in this article](https://github.com/mixja/ansible-dpdk-seastar)** 
 
 ## Seastar
 [Seastar](http://www.seastar-project.org) <a href="http://www.seastar-project.org" target="_blank">Seastar</a> is a very young [open source project](https://github.com/cloudius-systems/seastar) created by Cloudius Systems, the company behind [OSv](http://osv.io).  
