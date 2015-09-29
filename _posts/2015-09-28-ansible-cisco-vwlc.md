@@ -57,7 +57,7 @@ All that is needed is a little orchestration and automation magic from Ansible.
 
 This purpose of this article is to explain in detail how the Ansible playbook that <a href="https://github.com/cloudhotspot/ansible-cisco-vwlc" target="_blank">I've published on Github</a> actually works.
 
-However it is worthfile to give a quick overview of how to use the playbook before we delve into details.
+However it is worthwhile to give a quick overview of how to use the playbook before we delve into details.
 
 The target user experience here is to:
 
