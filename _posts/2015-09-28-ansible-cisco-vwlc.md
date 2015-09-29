@@ -535,7 +535,7 @@ The `name: Get Ethernet0 MAC address` task looks up the `ethernet0.generatedAddr
 
 We will use this MAC address to configure a DHCP reservation for the vWLC virtual machine.
 
-> Notice that `awk` is our friend here :)
+> Notice that `awk` is our friend here :)  You may notice that I use `awk` and `grep` interchangeably and in general the usual differences apply.  One key difference is that `grep` always returns an error if there is no match, where as `awk` does not.  This can litter your playbook output with unsightly errors, even if you choose to ignore errors (which IMHO is an Ansible antipattern).  One way to work around the `grep` error return code issue is to add on `|| true` at the end of the `grep` command.
 
 Now before either of these tasks, note that we actually start the virtual machine in the first `name: Start virtual machine` task.  The reason for this is that the virtual machine MAC addresses are not generated until the virtual machine is first started.  Here I use the `vmrun start` command to start the virtual machine - starting at this point does not have any adverse effects, as the vWLC installation process takes 3-4 minutes before it gets to a point where it will be using DHCP. 
 
