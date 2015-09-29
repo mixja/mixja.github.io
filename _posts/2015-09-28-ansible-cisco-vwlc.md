@@ -12,8 +12,10 @@ tags:
   - wlc
   - vwlc
   - controller
-published: false
+published: true
 ---
+
+## Introduction
 
 Outside of Docker, <a href="http://www.ansible.com" target="_blank">Ansible</a> seems to be one of the hottest DevOps tools these days.  
 
@@ -51,19 +53,41 @@ VMWare Fusion ships with a DHCP server for the host networking functions, and OS
 
 All that is needed is a little orchestration and automation magic from Ansible.  
 
+## Quick Start
+
+This purpose of this article is to explain in detail how the Ansible playbook that <a href="https://github.com/cloudhotspot/ansible-cisco-vwlc" target="_blank">I've published on Github</a> actually works.
+
+However it is worthfile to give a quick overview of how to use the playbook before we delve into details.
+
+The target user experience here is to:
+
+- Download the OVA appliance from CCO
+- Define configuration parameters in the `vm_vars.yml` and `vwlc.yml` files.  For the most part these parameters are self explanatory and explained in full on the Github README.
+- Run the playbook as demonstrated below.
+
+To run the playbook:
+
+`ansible-playbook site.yml`
+
+And to run the playbook and overwrite a previous installation:
+
+`ansible-playbook site.yml --extra-vars vm_overwrite=true`
+
+For further information, refer to the <a href="https://github.com/cloudhotspot/ansible-cisco-vwlc" target="_blank">README located at the Github repository</a>.     
+
 ## Workflow
 
-> <a href="https://github.com/cloudhotspot/ansible-cisco-vwlc" target="_blank">I've published an Ansible playbook on Github</a>, and the rest of this article will discuss the workflow and each of the specific tasks required.
+The rest of this article will now discuss the Ansible playbook in detail.
 
-The high-level workflow is as follows:
+The high-level workflow of the playbook is as follows:
 
-- Prepare destination folders for the virtual machine
-- Deploy the virtual machine from the OVA appliance image
-- Configure the inbuilt OS X TFTP daemon to serve an appropriate configuration file for the controller
-- Configure the VMWare DHCP server
-- Power on the vWLC and clean up once provisioning is complete  
+- <a href="#preparing-destination-folders">Prepare destination folders for the virtual machine</a>
+- <a href="#deploying-vm">Deploy the virtual machine from the OVA appliance image</a>
+- <a href="#configuring-tftp">Configure the inbuilt OS X TFTP daemon to serve an appropriate configuration file for the controller</a>
+- <a href="#configuring-dhcp">Configure the VMWare DHCP server</a>
+- <a href="#autoinstall-cleanup">AutoInstall the vWLC and clean up once provisioning is complete</a>  
 
-## Preparing the Virtual Machine Destination folders
+## <a name="preparing-destination-folders"></a>Preparing the Virtual Machine Destination folders
 
 Deploying the OVA image sounds simple enough but to make the playbook fairly idiot-proof and user friendly, we need to consider a couple of what-if scenarios:
 
@@ -156,9 +180,9 @@ Next I stop the VM (only if it is running) in the `name: Stop VM if it is runnin
 
 Finally, I can safely remove the existing VM location (if it previously existed) using the `name: Remove existing VM path` task and create the target VM location using the `name: Create VM path` task.
 
-> Pre-creating the target VM location alters the behaviour of the `ovftool`, which is used to deploy the virtual machine from the OVA image, disucssed in the next section.
+> Pre-creating the target VM location alters the behaviour of the `ovftool`, which is used to deploy the virtual machine from the OVA image, discussed in the next section.
 
-## Deploying the Virtual Machine from the OVA Image
+## <a name="deploying-vm"></a>Deploying the Virtual Machine from the OVA Image
 
 Now we are ready to deploy the virtual machine from the OVA image.  These tasks are defined in the `deploy_ova.yml` play:
 
@@ -213,11 +237,11 @@ Before we start the VM, the `name: Configure Ethernet0 as Share with my Mac` tas
 
 `ethernet0.connectionType = "nat"`
 
-This setting is important, as it ensures the service port on the vWLC appliance will use internal VMWare Fusion networking and the VMWare Fusion DHCP server.  The other `ethernet1` interface will remain in the default bridged networking mode.
+This setting is important, as it ensures the service port on the vWLC appliance will use internal VMWare Fusion <a href="http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=1022264" target="_blank">NAT networking mode</a> and the VMWare Fusion DHCP server.  The other `ethernet1` interface will remain in the default bridged networking mode.
 
 > The Cisco vWLC appliance comes with two network interfaces.  `ethernet0` is the service port and `ethernet1` is the management port that connects access points. 
  
-## Configuring the OS X TFTP Server
+## <a name="configuring-tftp"></a>Configuring the OS X TFTP Server
 OS X ships with a TFTP server that is disabled by default.  The `tftp.yml` play defines the various tasks required to configure and enable the TFTP server:
 
 {% highlight yaml %}
@@ -307,7 +331,7 @@ The configuration of the TFTP server is controlled via the file `/System/Library
 {% endraw %}
 {% endhighlight %}
 
-The template enables the TFTP server by setting the `<key>Disabled</key>` value to `<false/>` and also includes the `tftp_path` user variable to specify the folder that the TFTP server should serve.
+The template enables the TFTP server by setting the `<key>Disabled</key>` value to `<false/>` and also includes the `tftp_path` variable to specify the folder that the TFTP server should serve.
 
 The `name: Deploy WLC file` task then deploys the Cisco vWLC configuration file that will served via TFTP.  The playbook allows you to provide your own config file by setting the `wlc_config_file` variable - if this variable is not defined, the playbook deploys a basic configuration derived from the following template:
 
@@ -426,13 +450,31 @@ wlc_ntp_interval: 3600
 wlc_ssid: Test SSID
 {% endraw %}
 {% endhighlight %}
+
+The task will deploy the configuration file to a file named `ciscowlc.cfg` - we use this name as it is one of the file names that the vWLC will attempt to download from the TFTP server as part of the AutoInstall feature (<a href="http://www.cisco.com/c/en/us/td/docs/wireless/controller/7-2/configuration/guide/cg/cg_gettingstarted.html#wp1144143" target="_blank">see here for more details</a>). 
  
-## Configuring the VMWare DHCP Server
-Configuring the DHCP server is probably the trickiest part of the playbook.  The play is defined in the `dhcp.yml` file:
+## <a name="configuring-dhcp"></a>Configuring the VMWare DHCP Server
+Configuring the DHCP server is probably the trickiest part of the playbook.  
+
+The various tasks are defined at the beginning of the `vwlc.yml` file:
  
 {% highlight yaml %}
 {% raw %}
 ---
+- name: Start WLC
+  hosts: localhost
+  connection: local
+  roles:
+    - yaegashi.blockinfile
+  vars_files:
+    - vm_vars.yml
+    - wlc_vars.yml
+  handlers:
+    - include: handlers/vmware.yml
+  tasks:
+    - name: Start virtual machine
+      command: "'{{ vmrun_path }}' start '{{ vm_safe_dst_full_path }}/{{ vm_name }}.vmx'"
+      
 - name: Introspect Virtual Machine information
   hosts: localhost
   connection: local
@@ -461,12 +503,6 @@ Configuring the DHCP server is probably the trickiest part of the playbook.  The
   handlers:
     - include: handlers/vmware.yml
   tasks:
-    - name: Add next-server parameter to vmnet8 DHCP configuration
-      lineinfile: >
-        dest="{{ dhcpd_conf_path }}"
-        line="next-server {{ vmnet8_ip_address.stdout }};"
-        insertbefore=BOF
-      become: yes
     - name: Add temporary DHCP reservation
       blockinfile:
         dest: '{{ dhcpd_conf_path }}'
@@ -480,6 +516,7 @@ Configuring the DHCP server is probably the trickiest part of the playbook.  The
             default-lease-time 1200;
             max-lease-time 1200;  
             option routers {{ vmnet8_ip_address.stdout | regex_replace('(.*)\..*$', '\\1.2') }};
+            next-server {{ vmnet8_ip_address.stdout }};
           }
       become: yes
       notify:
@@ -487,7 +524,7 @@ Configuring the DHCP server is probably the trickiest part of the playbook.  The
         - start vmware networking
 {% endraw %}
 {% endhighlight %}
- 
+
 ### Examining VMWare and Virtual Machine Networking
 In the `name: Introspect Virtual Machine Information` set of tasks, the `name: Get vmnet8 IP address` task determines the IP address being used for the `Share with my Mac` vmnet8 network adapter.  This interface is connected to the service port of the vWLC virtual machine, and because 
 the OS X TFTP daemon binds to all network interfaces, we can specify this IP address as the TFTP server address.
@@ -498,11 +535,11 @@ The `name: Get Ethernet0 MAC address` task looks up the `ethernet0.generatedAddr
 
 We will use this MAC address to configure a DHCP reservation for the vWLC virtual machine.
 
-> Notice in both of the above tasks `awk` is our friend.
+> Notice that `awk` is our friend here :)
 
-Now before either of these tasks, notice that we actually start the virtual machine in the `name: Start virtual machine` task.  The reason for this is that the virtual machine MAC addresses are not generated until the virtula machine is first started.  Here I use the `vmrun start` command.
+Now before either of these tasks, note that we actually start the virtual machine in the first `name: Start virtual machine` task.  The reason for this is that the virtual machine MAC addresses are not generated until the virtual machine is first started.  Here I use the `vmrun start` command to start the virtual machine - starting at this point does not have any adverse effects, as the vWLC installation process takes 3-4 minutes before it gets to a point where it will be using DHCP. 
 
-### Configuring DHCP
+### Configuring VMWare DHCP
 The `name: Configure VMWare DHCP` set of tasks modifies the VMWare DHCP configuration file for the vmnet8 interface.  This configuration file is located at `/Library/Preferences/VMware Fusion/vmnet8/dhcpd.conf` and an example is shown below:
 
 {% highlight text %}
@@ -554,19 +591,20 @@ host vmnet8 {
 
 If you are familiar with the ISC DHCPD server, you'll notice this is exactly what VMWare is using for the DHCP service.  This makes it very easy to configure the DHCP server for our needs.
 
-First, we add the `next-server` directive to the configuration and specify the IP address of the vmnet8 adapter - this must be placed someware above the VMNET DHCP Configuration section.
+We add a DHCP reservation for the vWLC virtual machine to the bottom of the DHCP configuration file as defined in the `name: Add temporary DHCP reservation` task.  
 
-Next, we add a DHCP reservation for the vWLC virtual machine to the bottom of the DHCP configuration file as defined in the `name: Add temporary DHCP reservation` task.  The main reason for this is that we want our playbook to start up the virtual machine and wait until it has been provisioned before performing some cleanup tasks.  We know if the virtual machine has provisioned by attempting to connect to IP address of the virtual machine, hence why we need to control and track the IP address of the virtual machine.
+This allows us to control the IP address allocated to the vWLC virtual machine and set DHCP Option 66 (TFTP Server) that is required for AutoInstall.  This option set using the `next-server` directive in the reservation and specifying the IP address of the vmnet8 adapter.
 
-Notice that we use a <a href="https://github.com/yaegashi/ansible-role-blockinfile" target="_blank">third-party community module called yaegashi.blockinfile</a>.  This module must first be installed via Ansible Galaxy as follows:
+VMWare Fusion appears to use a default DHCP range of 192.168.x.128 - 192.168.x.254, so I'm reserving the IP address 192.168.x.127 for the vWLC service port. The reservation also needs to adopt the various other settings defined in the standard DHCP scope for the vmnet8 interface.
+
+To deploy the necessary configuration for the reservation, I'm using a <a href="https://github.com/yaegashi/ansible-role-blockinfile" target="_blank">third-party community module called yaegashi.blockinfile</a>.  This module must first be installed via Ansible Galaxy as follows:
 
 `ansible-galaxy install yaegashi.blockinfile`
 
-Here is an example of the DHCP configuration file with the modifications in place:
+Here is an example of the DHCP configuration file with the DHCP reservation configuration appended to the end of the file:
 
 {% highlight text %}
 {% raw %}
-next-server 192.168.232.1;
 # Configuration file for ISC 2.0 vmnet-dhcpd operating on vmnet8.
 #
 # This file was automatically generated by the VMware configuration program.
@@ -619,10 +657,13 @@ host wlc01 {
   default-lease-time 1200;
   max-lease-time 1200;  
   option routers 192.168.232.2;
+  next-server 192.168.232.1;
 }
 # END ANSIBLE MANAGED BLOCK
 {% endraw %}
 {% endhighlight %}
+
+The `blockinfile` module includes begin and end marker lines, which are useful for removing the inserted block later during cleanup.
 
 With the modifications made to the DHCP configuration, the `name: Add temporary DHCP reservation` task notifies a couple of handlers, defined in `handlers/vmware.yml`:
 
@@ -638,15 +679,49 @@ With the modifications made to the DHCP configuration, the `name: Add temporary 
 {% endraw %}
 {% endhighlight %}
 
-These handlers restart VMWare networking, allowing the DHCP configuration changes to take effect.
+These handlers restart VMWare networking using the `vmnet-cli` command (included with VMWare Fusion), allowing the DHCP configuration changes to take effect.
  
-### Virtual Machine AutoInstall and Cleanup
-At this point, everything is in place for the vWLC to use the AutoInstall feature:
+## <a name="autoinstall-cleanup"></a>Virtual Machine AutoInstall and Cleanup
+At this point, everything is in place for the (currently initialising) vWLC virtual machine to use the AutoInstall feature:
 
 - TFTP daemon is enabled and configured with a vWLC configuration file
 - VMWare DHCP server is configured to advertise the TFTP server IP address and issue a DHCP reservation to vWLC virtual machine
 
-Here is the relevant section from the `vwlc.yml` file:
+### vWLC AutoInstall Process
+The following screen shots show the various stages of vWLC AutoInstall.
+
+First time boot of the vWLC virtual machine.  The OVA includes an ISO installer that images the virtual machine hard disk:
+<figure>
+  <img src="/images/vwlc-install-start.png" alt="vWLC Installation Start">
+</figure>
+
+After approximately one minute the hard disk imaging is complete and the appliance reboots:
+<figure>
+  <img src="/images/vwlc-image-complete.png" alt="vWLC Imaging Complete">
+</figure>
+
+One quirk of the vWLC virtual machine is that you have to explicitly enable console output at boot.  This is only needed if you need to access the console for any reason (or take screenshots of the install process :):
+<figure>
+  <img src="/images/vwlc-press-any-key.png" alt="vWLC press any key">
+</figure>
+
+At approximately T=2:30 the setup wizard will be displayed.  This allows you to manually configure the vWLC, which we obviously don't do in this case:
+<figure>
+  <img src="/images/vwlc-setup-wizard.png" alt="vWLC Setup Wizard">
+</figure>
+
+After 30 seconds the AutoInstall process will start automatically.  About 30 seconds into the AutoInstall process, you will see the vWLC virtual machine download the `ciscowlc.cfg` configuration file and reboot:
+<figure>
+  <img src="/images/vwlc-config-file.png" alt="vWLC Config File Download">
+</figure>
+
+After rebooting, the installation will be complete.  The entire process takes just a shade over five minutes.
+<figure>
+  <img src="/images/vwlc-install-complete.png" alt="vWLC Setup Wizard">
+</figure>
+
+### Cleanup
+After installation is complete, the following tasks in the `vwlc.yml` file will be executed:
 
 {% highlight text %}
 {% raw %}
@@ -692,8 +767,15 @@ Here is the relevant section from the `vwlc.yml` file:
 {% endraw %}
 {% endhighlight %}
 
-The playbook is configured wait for the vWLC virtual machine to come online with the `name: Wait for WLC to provision` task.  This task attempts to establish a TCP connection to port 443 on the vWLC virtual machine service port IP address.
+The playbook is configured wait for the vWLC virtual machine to come online with the `name: Wait for WLC to provision` task.  This task attempts to establish a TCP connection to port 443 on the vWLC virtual machine service port IP address (hence why we need to setup a DHCP reservation). 
 
-> You might be tempted to use port 22 to determine if the vWLC virtual machine is fully provisioned.  The vWLC leaves port 22 open during the AutoInstall process allowing the task to establish a TCP connection, hence using port 22 would mean playbook would think provisioning has finished at a much earlier time.  Port 443 (HTTPS) is only activated once provisioning is fully complete.
+> You might be tempted to use port 22 to determine if the vWLC virtual machine is fully provisioned.  The vWLC leaves port 22 open during the AutoInstall process allowing the task to establish a TCP connection, hence using port 22 would mean playbook would think provisioning has finished at a much earlier time.  Port 443 (HTTPS) is only activated once provisioning is fully complete, hence gives a more reliable indication that provisioning is complete.
 
 Once the provisioning is completed, a series of cleanup tasks takes place.  This cleanup removes the various DHCP and TFTP configurations and files, ensuring your VMWare networking configuration is restored to its previous state.
+
+## Wrap Up
+Well this has been a very long article, but hopefully you have some good insights into how you Ansible can automate deployment of the Cisco Virtual Wireless Controller.
+
+If you are like me and regularly need a vWLC instance running in a lab, development or demonstration environment, this playbook should save you a lot of time.
+
+Along the way I've also shown you a few of the internals that support VMWare Fusion and how you can use those to automate certain tasks.  Hopefully you've also picked up a few Ansible tricks that you can apply to your own automation/deployment scenarios.    
