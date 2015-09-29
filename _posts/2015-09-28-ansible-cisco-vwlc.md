@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Deploying the Cisco Virtual Wireless Controller using Ansible
+title: Deploying the Cisco vWLC using Ansible
 description: How to deploy Cisco's Virtual Wireless Controller using Ansible and VMWare Fusion
 tags:
   - ansible
