@@ -336,7 +336,7 @@ weighttp -n 1000000 -c 1000 -t 4 -k 192.168.1.200:10000
 The following graph illustrates the results:
 
 <figure>
-  <img src="/images/showdown-results.png" alt="">
+  <img src="/images/showdown-results.png" alt="Showdown Results">
 </figure>
 
 ## Wrap Up
