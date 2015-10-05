@@ -196,7 +196,7 @@ The ISO method of creating the OVF Environment Runtime is simple:
 - Create OVF Environment File in a file called `ovf-env.xml`
 - Create an ISO that contains the `ovf-env.xml` file
 
-You can do complete all of the tasks above manually, however the `mixja.csr1000v` role automates these tasks for you as outlined below.
+You can complete all of the tasks above manually, however the `mixja.csr1000v` role automates these tasks for you as outlined below.
 
 Here is how the OVF environment file is created based upon the OVF environment template file listed above:
 
