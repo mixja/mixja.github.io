@@ -12,10 +12,16 @@ tags:
   - wlc
   - vwlc
   - controller
+image:
+  feature: bridge-bg.jpg
+  credit: Keith Cuddeback
+  creditlink: https://www.flickr.com/photos/in2photos/8234899589/
 published: true
 ---
 
 ## Introduction
+
+**UPDATE 6th October, 2015: I have refactored the original playbook that was the subject of this article into a reusable Ansible Galaxy role.  This article has been updated accordingly and has numerous changes from the original article.**
 
 Outside of Docker, <a href="http://www.ansible.com" target="_blank">Ansible</a> seems to be one of the hottest DevOps tools these days.  
 
@@ -55,15 +61,20 @@ All that is needed is a little orchestration and automation magic from Ansible.
 
 ## Quick Start
 
-This purpose of this article is to explain in detail how the Ansible playbook that <a href="https://github.com/cloudhotspot/ansible-cisco-vwlc" target="_blank">I've published on Github</a> actually works.
+This purpose of this article is to explain in detail how the Ansible role called `mixja.vwlc` that <a href="https://galaxy.ansible.com/list#/roles/5387" target="_blank">I've published on Ansible Galaxy</a> actually works.
 
-However it is worthwhile to give a quick overview of how to use the playbook before we delve into details.
+However it is worthwhile to give a quick overview of how to use the playbook before we delve into details.  A <a href="https://github.com/cloudhotspot/ansible-vwlc-playbook" target="_blank">sample playbook</a> is published on Github which you should use to get started.
 
 The target user experience here is to:
 
 - Download the OVA appliance from CCO
-- Define configuration parameters in the `vm_vars.yml` and `vwlc.yml` files.  For the most part these parameters are self explanatory and explained in full on the Github README.
+- Review the <a href="https://github.com/cloudhotspot/ansible-vwlc-playbook#quick-start">Quick Start</a> section in the sample playbook README.  Here you will note that you have to provide a valid OVA source image and a destination root for the deployed virtual machine.
+- Define configuration parameters as described in the <a href="https://github.com/cloudhotspot/ansible-vwlc-playbook#configuration-variables">sample playbook README</a>.  
 - Run the playbook as demonstrated below.
+
+To install the Ansible Galaxy role:
+
+`ansible-galaxy install mixja.vwlc`
 
 To run the playbook:
 
@@ -71,100 +82,124 @@ To run the playbook:
 
 And to run the playbook and overwrite a previous installation:
 
-`ansible-playbook site.yml --extra-vars vm_overwrite=true`
-
-For further information, refer to the <a href="https://github.com/cloudhotspot/ansible-cisco-vwlc" target="_blank">README located at the Github repository</a>.     
+`ansible-playbook site.yml --extra-vars csr_vm_overwrite=true`     
 
 ## Workflow
 
-The rest of this article will now discuss the Ansible playbook in detail.
+The rest of this article will now discuss the `mixja.vwlc` role in detail.  The source for this role is <a href="https://github.com/cloudhotspot/ansible-vwlc-role" target="_blank">published on Github</a>, and is published on <a href="https://galaxy.ansible.com/list#/roles/5387" target="_blank">Ansible Galaxy</a>. 
 
 The high-level workflow of the playbook is as follows:
 
-- <a href="#preparing-destination-folders">Prepare destination folders for the virtual machine</a>
-- <a href="#deploying-vm">Deploy the virtual machine from the OVA appliance image</a>
+- <a href="#deploying-vm">Deploying the virtual machine</a>
+- <a href="#introspecting">Introspecting the deployed virtual machine</a>
 - <a href="#configuring-tftp">Configure the inbuilt OS X TFTP daemon to serve an appropriate configuration file for the controller</a>
 - <a href="#configuring-dhcp">Configure the VMWare DHCP server</a>
 - <a href="#autoinstall-cleanup">AutoInstall the vWLC and clean up once provisioning is complete</a>  
 
-## <a name="preparing-destination-folders"></a>Preparing the Virtual Machine Destination folders
+## <a name="deploying-vm"></a>Deploying the Virtual Machine
 
 Deploying the OVA image sounds simple enough but to make the playbook fairly idiot-proof and user friendly, we need to consider a couple of what-if scenarios:
 
 - What if we've already deployed the image to the desired location?
 - What if a virtual machine is running at the desired location? 
 
-The first set of tasks is described in the `prepare_vm_folder.yml` play and focuses on creating the folder for the destination virtual machine, taking into account the scenarios listed above.
+We need to handle these scenarios appropriately, before the virtual machine can be extracted from the OVA image.
+
+### Establishing some Facts 
+The first set of tasks in the role are described in the <a href="https://github.com/cloudhotspot/ansible-vwlc-role/blob/master/tasks/set_facts.yml" target="_blank">`set_facts.yml`</a> file, which are used to create a few internal variables used throughout the role:
 
 {% highlight yaml %}
 {% raw %}
 ---
-- name: Check if VM already exists
-  hosts: localhost
-  connection: local
-  vars_files:
-    - vm_vars.yml
-  tasks: 
-    - name: Check VM path
-      stat: path='{{ vm_safe_dst_full_path }}'
-      register: vm_exists
-      changed_when: False
-    - name: Fail if VM path exists
-      fail: msg="VM already exists.  Please set vm_overwrite variable to any value to overwrite the existing VM"
-      when: (vm_exists.stat.isdir is defined) and (vm_overwrite is not defined)
-    - name: Get VMX path if existing VM is running
-      shell: "'{{ vmrun_path }}' list | grep -F '{{ vm_safe_dst_full_path }}' || true"
-      register: vmx_path
-      when: vm_exists.stat.isdir is defined
-      changed_when: False
-    - name: Stop VM if it is running
-      shell: "'{{ vmrun_path }}' stop '{{ vmx_path.stdout }}'"
-      when: vmx_path is defined and vmx_path.stdout != ""
-    - name: Remove existing VM path
-      file: path='{{ vm_safe_dst_full_path }}' state=absent
-    - name: Create VM path
-      file: path='{{ vm_safe_dst_full_path }}' state=directory
+- name: Pad VM destination root path with /
+  set_fact: wlc_vm_padded_destination='{{ wlc_vm_root }}/'
+- name: Extract root directory name from padded VM root path
+  set_fact: wlc_vm_safe_dst="{{ wlc_vm_padded_destination | dirname }}"
+- name: Get full path to VM folder
+  set_fact: wlc_vm_safe_dst_full_path="{{ wlc_vm_safe_dst }}/{{ wlc_vm_name }}.vmwarevm"
+- name: Get full path fo VMX file
+  set_fact: wlc_vm_vmx_path="{{ wlc_vm_safe_dst_full_path }}/{{ wlc_vm_name }}.vmx"
 {% endraw %}
 {% endhighlight %}
 
-There's a few variables in there which are included in the `vm_vars.yml` file:
+The above tasks require the following inputs:
+
+- `wlc_vm_root` - Defines the root folder where the virtual machine will be deployed. This must be specified by the user as input to the role.
+- `wlc_vm_name` - Defines the name of the virtual machine.  The default value is `wlc01`  
+
+### Making some Checks 
+Next, the tasks in <a href="https://github.com/cloudhotspot/ansible-vwlc-role/blob/master/tasks/checks.yml" target="_blank">`checks.yml`</a> verify that the `ovftool` utility is installed, and determines if a virtual machine is already deployed at the target destination path:
+
+> <a href="https://www.vmware.com/support/developer/ovf/" target="_blank">VMWare provides a free tool called `ovftool` to registered VMWare users</a>, and this tool must be installed to deploy virtual machines from OVA files using the command line.
 
 {% highlight yaml %}
 {% raw %}
-# Input values, modify as required
-vm_name: "wlc01"
-vm_destination: "/Users/jmenga/Virtual Machines.localized"
-vmrun_path: "/Applications/VMware\ Fusion.app/Contents/Library/vmrun"
-ova_source: "/Users/jmenga/Downloads/AIR-CTVM-K9-8-0-120-0.ova"
-
-# Calculated values, do not modify
-vm_padded_destination: "{{ vm_destination }}/"
-vm_safe_dst: "{{ vm_padded_destination | dirname }}"
-vm_safe_dst_full_path: "{{ vm_safe_dst }}/{{ vm_name }}.vmwarevm"
+---
+- name: Check for ovftool
+  shell: pkgutil --pkgs | awk '/com.vmware.ovftool.application/'
+  register: wlc_pkgutil_ovftool
+  changed_when: False
+- name: Fail if VMWare OVF Tools are not installed
+  fail: msg="VMWare OVF Tools are required.  Please install and retry."
+  when: 'not {{ wlc_pkgutil_ovftool.stdout | match("com.vmware.ovftool.application") }}'
+- name: Get ovftool path
+  shell: pkgutil --files com.vmware.ovftool.application | grep -FE 'ovftool$'
+  register: wlc_ovftool_path
+  changed_when: false
+- name: Check VM path
+  stat: path='{{ wlc_vm_safe_dst_full_path }}'
+  register: wlc_vm_exists
+  changed_when: False
+- name: Fail if VM path exists
+  fail: msg="VM already exists.  Please set wlc_vm_overwrite variable to any value to overwrite the existing VM"
+  when: (wlc_vm_exists.stat.isdir is defined) and (wlc_vm_overwrite is not defined)
 {% endraw %}
 {% endhighlight %}
 
-Here's a description of what's happening in the `prepare_vm_folder.yml` play above:
-
-### Checking the Target VM Location
-I first check if the desired VM location already exists in the `name: Check VM path` task.  Note I'm using the following convention to create this location:
+The `name: Check VM path` task checks if the desired VM location already exists.  Note the following convention to create this location:
 
 {% raw %}
-`{{ vm_destination }}/{{ vm_name }}.vmwarevm`  
+`{{ wlc_vm_root }}/{{ wlc_vm_name }}.vmwarevm`  
 {% endraw %}
 
-So the VM location will be `/Users/jmenga/Virtual Machines.localized/wlc01.vmwarevm` using the input values shown. 
+So the VM location will be `/path/to/vm/root/wlc01.vmwarevm` assuming a VM name of `wlc01`. 
 
 Note I'm using a calculated `vm_safe_dst_full_path` variable, which is derived from the above convention.  This variable is manipulated to ensure we get the correct full path without any duplicate forward slashes. 
 
-If the VM location already exists, the entire playbook is configured to fail in the `name: Fail if VM path exists` task, unless the `vm_overwrite` variable is defined with any value (note the heavy use of Ansible conditionals using the `when` clause).  
+If the VM location already exists, the entire playbook is configured to fail in the `name: Fail if VM path exists` task, unless the `csr_vm_overwrite` variable is defined with any value.  
 
 This approach protects you from accidentally overwriting an existing virtual machine, but still allows you to explicitly overwrite it if that is your intention as demonstrated below:
 
-`$ ansible-playbook site.yml --extra-vars vm_overwrite=true`
+`$ ansible-playbook site.yml --extra-vars csr_vm_overwrite=true`
 
 ### Creating the VM Location
-Before creating the VM location I check if there is an existing VM running (assuming the VM location already exists and `vm_overwrite` has been defined).  As the intention in this scenario is to overwrite an existing VM, we need to first stop the VM (if it is running) in order to remove the existing VM folder and files.
+
+With initial facts set and checks out of the way, the `create_vm.yml` tasks create the virtual machine folder. 
+
+{% highlight yaml %}
+{% raw %}
+---
+- name: Get VMX path if existing VM is running
+  shell: "'{{ wlc_vmrun_path }}' list | grep -F '{{ wlc_vm_safe_dst_full_path }}' || true"
+  register: wlc_vmx_path
+  when: wlc_vm_exists.stat.isdir is defined
+  changed_when: wlc_vmx_path is defined and wlc_vmx_path.stdout != ""
+  notify:
+    - stop vm hard
+    - pause three seconds
+- meta: flush_handlers
+- name: Remove existing VM path
+  file: path='{{ wlc_vm_safe_dst_full_path }}' state=absent
+- name: Create VM path
+  file: path='{{ wlc_vm_safe_dst_full_path }}' state=directory
+- name: Extract OVA using ovftool
+  command: "'/{{ wlc_ovftool_path.stdout }}' '{{ wlc_ova_source }}' '{{ wlc_vm_vmx_path }}'"
+{% endraw %}
+{% endhighlight %}
+
+Before creating the VM location I check if there is an existing VM running (assuming the VM location already exists and `csr_vm_overwrite` has been defined).  
+
+As the intention in this scenario is to overwrite an existing VM, we need to first stop the VM (if it is running) in order to remove the existing VM folder and files.
 
 To do this, I use the `vmrun list` command which is included as part of the VMWare Fusion application. This is defined in the `name: Get VMX path if existing VM is running` task, using good old `grep` to extract the full path of the running VM vmx file at the target VM location.
 
@@ -176,70 +211,93 @@ Total running VMs: 1
 /Users/jmenga/Virtual Machines.localized/wlc01.vmwarevm/wlc01.vmx
 {% endhighlight %}
 
-Next I stop the VM (only if it is running) in the `name: Stop VM if it is running` task, using the `vmrun stop` command.  
+Note I use `changed_when` with a boolean expression to determine if the VM is actually running.  This is useful as the `stop vm hard` and `pause three seconds` handlers will only be called if `changed_when` evaluates to true:
 
-Finally, I can safely remove the existing VM location (if it previously existed) using the `name: Remove existing VM path` task and create the target VM location using the `name: Create VM path` task.
+{% highlight yaml %}
+{% raw %}
+- name: stop vm hard
+  command: '"{{ wlc_vmrun_path }}" stop "{{ wlc_vm_vmx_path }}" hard'
+  become: no
+  
+- name: pause three seconds
+  pause: seconds=3
+{% endraw %}
+{% endhighlight %}
 
-> Pre-creating the target VM location alters the behaviour of the `ovftool`, which is used to deploy the virtual machine from the OVA image, discussed in the next section.
+A few points to note here:
 
-## <a name="deploying-vm"></a>Deploying the Virtual Machine from the OVA Image
+- I explicitly force the `stop vm hard` handler to run in the context of the user executing the playbook.  If you call this handler from a task that is running as root, the handler will run as root unless you specify `become: no`.  This is important for the `vmrun` command, as it only lists Virtual Machines running in the context of each user.    
+- The `pause three seconds` handler prevents a race condition where the existing virtual machine shutdown may not complete gracefully before the next task that attempts to remove the existing virtual machine.
+- The `meta: flush_handlers` task in `create_vm.yml` forces handlers to execute immediately.  By default, handlers run at the end of a play, which may not be the desired behaviour.     
 
-Now we are ready to deploy the virtual machine from the OVA image.  These tasks are defined in the `deploy_ova.yml` play:
+At this point, the existing VM location (if it previously existed) can be safely removed using the `name: Remove existing VM path` task and the target VM location created using the `name: Create VM path` task.
+
+The final step is to deploy the virtual machine from the OVA image, which is completed in the `name: Extract OVA using ovftool` task.  This task references the `wlc_ova_source` variable, which must be provided explicitly as input to the role.  The user must supply their own vWLC OVA image, which can be downloaded from <a href="https://software.cisco.com/download/release.html?mdfid=284464214&softwareid=280926587&release=8.0.120.0&relind=AVAILABLE&rellifecycle=ED&reltype=latest" target="_blank">Cisco</a> (CCO login required). 
+
+> Pre-creating the target VM location alters the behaviour of the `ovftool`, which is used to deploy the virtual machine from the OVA image.  If you run this command and the destination VMX parent folder does not exist, ovftool behaves difficultly and creates another folder in the format {% raw %}`<vm name>.vmwarevm`{% endraw %} under the specified parent folder and then places the vmx file in this folder.  To avoid this behaviour, you must precreate the target VM parent folder.
+
+## <a name="introspecting"></a>Introspecting the Virtual Machine
+
+The next tasks that are executed are defined in the <a href="https://github.com/cloudhotspot/ansible-vwlc-role/blob/master/tasks/checks.yml" target="_blank">`introspect.yml`</a> file:
 
 {% highlight yaml %}
 {% raw %}
 ---
-- name: Verify ovftool is installed
-  hosts: localhost
-  connection: local
-  tasks:
-    - name: Check for ovftool
-      shell: pkgutil --pkgs | awk '/com.vmware.ovftool.application/'
-      register: pkgutil_ovftool
-      changed_when: False
-    - name: Fail if VMWare OVF Tools are not installed
-      fail: msg="VMWare OVF Tools are required.  Please install and retry."
-      when: 'not {{ pkgutil_ovftool.stdout | match("com.vmware.ovftool.application") }}'
-    - name: Get ovftool path
-      shell: pkgutil --files com.vmware.ovftool.application | grep -FE 'ovftool$'
-      register: ovftool_path
-      changed_when: false
-
-- name: Extract OVA
-  hosts: localhost
-  connection: local
-  vars_files:
-    - vm_vars.yml
-  tasks:
-    - name: Extract OVA using ovftool
-      command: "'/{{ ovftool_path.stdout }}' '{{ ova_source }}' '{{ vm_safe_dst_full_path }}/{{ vm_name }}.vmx'"
-    - name: Configure Ethernet0 as Share with my Mac
-      lineinfile: >
-        dest='{{ vm_safe_dst_full_path }}/{{ vm_name }}.vmx'
-        regexp='^ethernet0.connectionType ='
-        line='ethernet0.connectionType = "nat"'
+- name: Configure service port as Share with my Mac
+  lineinfile: >
+    dest='{{ wlc_vm_vmx_path }}'
+    regexp='^ethernet0.connectionType ='
+    line='ethernet0.connectionType = "nat"'
+  notify:
+    - start vm
+    - stop vm
+- meta: flush_handlers
+- name: Get service port MAC address
+  shell: cat '{{ wlc_vm_vmx_path }}' | awk -F'"' '/ethernet0.generatedAddress = /{print $2}'
+  register: wlc_vm_mac_address
+  changed_when: False
+- name: Get vmnet8 IP address
+  shell: ifconfig vmnet8 | awk '/inet/{print $2}'
+  register: wlc_vmnet8_ip_address
+  changed_when: False
+- name: Set host IP address fact
+  set_fact: wlc_host_ip_address={{ wlc_vmnet8_ip_address.stdout }}
+- name: Set VM MAC access fact
+  set_fact: wlc_vm_mac_address={{ wlc_vm_mac_address.stdout }}
+- name: Set VM IP address fact
+  set_fact: wlc_vm_ip_address={{ wlc_vmnet8_ip_address.stdout | regex_replace(wlc_vm_mgmt_ip_regex_match, wlc_vm_mgmt_ip_regex_replace) }}
+- name: Set VM IP gateway fact
+  set_fact: wlc_vm_ip_gateway={{ wlc_vmnet8_ip_address.stdout | regex_replace(wlc_vm_mgmt_ip_regex_match, wlc_vm_mgmt_gateway_regex_replace) }}
 {% endraw %}
 {% endhighlight %}
 
-### The ovftool utility
-<a href="" target="_blank">VMWare provides a free tool called `ovftool` to registered VMWare users</a>, and this tool must be installed to deploy virtual machines from OVA files using the command line.  
-
-The `name: Verify ovftool is installed` set of tasks verifies `ovftool` is installed and extracts the full path to the `ovftool` executable using various `pkgutil` commands.
-
-### Deploying the OVA Image
-The `name: Extract OVA` set of tasks first uses the `ovftool` command to extract the OVA file and deploy it to our target VM location.  The `ova_source` input variable defines the source OVA image (<a href="https://software.cisco.com/download/release.html?mdfid=284464214&softwareid=280926587&release=8.0.120.0&relind=AVAILABLE&rellifecycle=ED&reltype=latest" target="_blank">this image is available here to registered CCO users</a>) and notice we specify the destination VM vmx file. 
-
-> If you run this command and the destination VMX parent folder does not exist, ovftool behaves difficultly and creates another folder in the format {% raw %}`<vm name>.vmwarevm`{% endraw %} under the specified parent folder and then places the vmx file in this folder.  To avoid this behaviour, you must precreate the target VM parent folder (as was described earlier in this article)
-
-The deployed virtual machine includes all of the files necessary to start the VM.  
-
-Before we start the VM, the `name: Configure Ethernet0 as Share with my Mac` task reconfigures the `ethernet0` network interface connection type to **Share with my Mac** using the very useful `lineinfile` Ansible module.  This results in the following entry in the vmx file:
+The `name: Configure Ethernet0 as Share with my Mac` task reconfigures the `ethernet0` network interface connection type to **Share with my Mac** using the very useful `lineinfile` Ansible module.  This results in the following entry in the vmx file:
 
 `ethernet0.connectionType = "nat"`
 
 This setting is important, as it ensures the service port on the vWLC appliance will use internal VMWare Fusion <a href="http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=1022264" target="_blank">NAT networking mode</a> and the VMWare Fusion DHCP server.  The other `ethernet1` interface will remain in the default bridged networking mode.
 
-> The Cisco vWLC appliance comes with two network interfaces.  `ethernet0` is the service port and `ethernet1` is the management port that connects access points. 
+> The Cisco vWLC appliance comes with two network interfaces.  `ethernet0` is the service port and `ethernet1` is the management port that connects access points.
+
+At the end of this first task, the virtual machine is started and then immediately stopped.  The reason for this is that we need to generate a MAC address for the virtual machine service port interface, which does not happen until the virtual machine is started for the first time.  After bouncing the virtual machine, the `ethernet0.generatedAddress` key in the virtual machine vmx file will be populated with a MAC address:
+
+`ethernet0.generatedAddress = "00:0c:29:0d:ec:56"`
+
+The `name: Get service port MAC address` task parses the virtual machine VMX file to retrieve the MAC address, which is required to configure a DHCP reservation for the vWLC virtual machine service port.   
+
+> Notice that `awk` is our friend here :)  You may notice that I use `awk` and `grep` interchangeably and in general the usual differences apply.  One key difference is that `grep` always returns an error if there is no match, where as `awk` does not.  This can litter your playbook output with unsightly errors, even if you choose to ignore errors (which IMHO is an Ansible antipattern).  One way to work around the `grep` error return code issue is to add on `|| true` at the end of the `grep` command.
+
+The `name: Get vmnet8 IP address` task determines the IP address being used for the `Share with my Mac` vmnet8 network adapter.  This interface is connected to the service port of the vWLC virtual machine, and because 
+the OS X TFTP daemon binds to all network interfaces, we can specify this IP address as the TFTP server address.  We also can derive the network portion of the vmnet8 network adapter, which we will need to configure our DHCP reservation later on.
+
+The final tasks set a number of facts that are required for later tasks:
+
+- `wlc_host_ip_address` - the host IP address of the `vmnet8` adapter.  This IP address is used as the TFTP server address by vWLC.
+- `wlc_vm_mac_address` - the MAC address of the vWLC service port. 
+- `vlc_vm_ip_address` - the IP address of the vWLC service port.  This is calculated as the network portion of the `vmnet8` IP address combined with the value of the `wlc_vm_svc_ip_octet` variable.  As the `vmnet8` IP address always uses a /24 subnet mask, this results in the first three octets of the `vmnet8` IP address plus the `wlc_vm_svc_ip_octet` value.  E.g. given a `vmnet8` IP address of 192.168.100.1 and `wlc_vm_svc_ip_octet` value of 121, the `vlc_vm_ip_address` will be 192.168.100.121.
+- `wlc_vm_ip_gateway` - the router and DNS server address for the `vmnet8` network.  On VMWare Fusion, this is always the .2 address on the `vmnet8` network (e.g. 192.168.100.2 continuing on from the previous example).
+ 
+These facts are used to configure TFTP and DHCP settings as you will see shortly.
  
 ## <a name="configuring-tftp"></a>Configuring the OS X TFTP Server
 OS X ships with a TFTP server that is disabled by default.  The `tftp.yml` play defines the various tasks required to configure and enable the TFTP server:
@@ -247,51 +305,47 @@ OS X ships with a TFTP server that is disabled by default.  The `tftp.yml` play 
 {% highlight yaml %}
 {% raw %}
 ---
-- name: Configure TFTP
-  hosts: localhost
-  connection: local
-  vars_files:
-    - vm_vars.yml
-    - wlc_vars.yml
-  tasks: 
-    - name: Deploy TFTP plist
-      template: 
-        src: "templates/tftp.plist.j2" 
-        dest: "{{ tftp_plist }}"
-        mode: 0644
-      become: yes
-    - name: Ensure TFTP path exists
-      file: 
-        path: "{{ tftp_path }}"
-        state: directory
-        mode: 0777
-    - name: Deploy WLC file
-      template:
-        src: "{{ wlc_config_file | default('templates/ciscowlc.cfg.j2') }}"
-        dest: "{{ tftp_path }}/ciscowlc.cfg"
-
-- name: Start TFTP
-  hosts: localhost
-  connection: local
-  vars_files:
-    - vm_vars.yml
-  tasks:
-    - name: Check if TFTP daemon is running
-      shell: launchctl list | awk /com.apple.tftp/
-      become: yes
-      register: tftp_daemon_status
-      changed_when: False
-    - name: Stop TFTP daemon
-      command: launchctl unload {{ tftp_plist }}
-      become: yes
-      when: tftp_daemon_status.stdout != ""
-    - name: Start TFTP daemon
-      command: launchctl load -F {{ tftp_plist }}
-      become: yes  
+- name: Check if TFTP daemon is running
+  shell: launchctl list | awk /com.apple.tftp/
+  become: yes
+  register: wlc_tftp_daemon_status
+  changed_when: wlc_tftp_daemon_status.stdout != ""
+  notify:
+    - stop system tftp daemon
+- name: Deploy TFTP plist
+  template: 
+    src: "tftp.plist.j2" 
+    dest: "{{ wlc_tftp_plist }}"
+    mode: 0644
+  become: yes
+- name: Ensure TFTP path exists
+  file: 
+    path: "{{ wlc_tftp_path }}"
+    state: directory
+    mode: 0777
+- name: Deploy WLC file
+  template:
+    src: "{{ wlc_config_file | default('ciscowlc.cfg.j2') }}"
+    dest: "{{ wlc_tftp_path }}/ciscowlc.cfg"
+  changed_when: true
+  notify:
+    - start user tftp daemon
 {% endraw %}
 {% endhighlight %}
 
-The configuration of the TFTP server is controlled via the file `/System/Library/LaunchDaemons/tftp.plist` file.  In the `name: Deploy TFTP plist` task, I use a Jinja template to configure the relevant settings in the file:
+The first task determines if a TFTP daemon is currently running.  If this is the case, the `stop system tftp daemon` handler in <a href="https://github.com/cloudhotspot/ansible-vwlc-role/blob/master/handlers/main.yml" target="_blank">`handlers/main.yml`</a> stops the TFTP daemon:
+
+{% highlight yaml %}
+{% raw %}
+- name: stop system tftp daemon
+  command: launchctl unload '{{ wlc_system_tftp_plist }}'
+  become: yes
+{% endraw %}
+{% endhighlight %}
+ 
+> OS X El Capitan includes a new feature called <a href="https://developer.apple.com/library/mac/releasenotes/MacOSX/WhatsNewInOSX/Articles/MacOSX10_11.html#//apple_ref/doc/uid/TP40016227-DontLinkElementID_17" target="_blank">system integrity protection</a>, which prevents even root/sudo access from modifying OS X system files.  This includes the standard `/System/Library/LaunchDaemons/tftp.plist` file (which is the value of the `wlc_system_tftp_plist` variable in the handler above) that is used to configure the OS X TFTP server.  Although you can disable system integrity protection, the role avoids having to do this by creating a plist file outside of the protected OS X system file system (hence the reference to user and system TFTP daemons in the tasks).
+ 
+In the `name: Deploy TFTP plist` task, a Jinja 2 template is used to configure the relevant settings in the file:
 
 {% highlight xml %}
 {% raw %}
@@ -307,7 +361,7 @@ The configuration of the TFTP server is controlled via the file `/System/Library
   <array>
     <string>/usr/libexec/tftpd</string>
     <string>-i</string>
-    <string>{{ tftp_path }}</string>
+    <string>{{ wlc_tftp_path }}</string>
   </array>
   <key>inetdCompatibility</key>
   <dict>
@@ -331,13 +385,13 @@ The configuration of the TFTP server is controlled via the file `/System/Library
 {% endraw %}
 {% endhighlight %}
 
-The template enables the TFTP server by setting the `<key>Disabled</key>` value to `<false/>` and also includes the `tftp_path` variable to specify the folder that the TFTP server should serve.
+The template enables the TFTP server by setting the `<key>Disabled</key>` value to `<false/>` and also includes the `wlc_tftp_path` variable (`/Users/Shared/tftp` by default) to specify the folder that the TFTP server should serve.  The `name: Ensure TFTP path exists` task ensures this folder is present.
 
 The `name: Deploy WLC file` task then deploys the Cisco vWLC configuration file that will served via TFTP.  The playbook allows you to provide your own config file by setting the `wlc_config_file` variable - if this variable is not defined, the playbook deploys a basic configuration derived from the following template:
 
 {% highlight text %}
 {% raw %}
-# WLC Config Begin <{{ ansible_date_time.date }} {{ ansible_date_time.time }}>
+# WLC Config Begin
 
 config mdns service origin all AirTunes 
 config mdns service create AirTunes _raop._tcp.local. origin all lss disable 
@@ -424,15 +478,15 @@ config 802.11b 11gsupport enable
 config 802.11b cac voice sip bandwidth 64 sample-interval 20 
 config 802.11b cac voice sip codec g711 sample-interval 20 
 
-# WLC Config End <{{ ansible_date_time.date }} {{ ansible_date_time.time }}>
+# WLC Config End
 {% endraw %}
 {% endhighlight %}
 
-The template inserts various variables that are defined in the `wlc_vars.yml` file that are self explanatory:
+The template inserts various user configurable variables that are described in <a href="https://github.com/cloudhotspot/ansible-vwlc-role/blob/master/defaults/main.yml" target="_blank">`/defaults/main.yml`</a>:
 
 {% highlight yaml %}
 {% raw %}
----
+# WLC configuration settings
 wlc_name: wlc01
 wlc_admin_username: admin
 wlc_admin_password: Pass1234
@@ -451,96 +505,56 @@ wlc_ssid: Test SSID
 {% endraw %}
 {% endhighlight %}
 
-The task will deploy the configuration file to a file named `ciscowlc.cfg` - we use this name as it is one of the file names that the vWLC will attempt to download from the TFTP server as part of the AutoInstall feature (<a href="http://www.cisco.com/c/en/us/td/docs/wireless/controller/7-2/configuration/guide/cg/cg_gettingstarted.html#wp1144143" target="_blank">see here for more details</a>). 
+The task will deploy the configuration file to a file named `ciscowlc.cfg` - this name is used as it is one of the file names that the vWLC will attempt to download from the TFTP server as part of the AutoInstall feature (<a href="http://www.cisco.com/c/en/us/td/docs/wireless/controller/7-2/configuration/guide/cg/cg_gettingstarted.html#wp1144143" target="_blank">see here for more details</a>). 
  
 ## <a name="configuring-dhcp"></a>Configuring the VMWare DHCP Server
-Configuring the DHCP server is probably the trickiest part of the playbook.  
+The required network environment to support the AutoInstall feature is almost in place.  All that remains is to configure the VMWare DHCP server as follows:
 
-The various tasks are defined at the beginning of the `vwlc.yml` file:
+- Create a DHCP reservation for the vWLC service port interface.
+- The DHCP reservation must include the BOOTP next server setting, which is used by the vWLC during AutoInstall to determine the IP address of the TFTP server to download its configuration from 
+
+Configuring a DHCP reservation is useful for the following reasons:
+
+- We know the IP address that will be assigned to the service port.  We need this to configure the `/etc/hosts` file on the host system and to determine when the vWLC has provisioned successfully.
+- We can constrain custom DHCP settings (i.e. BOOTP next server) to the vWLC virtual machine only.  This avoids unforeseen side effects that might be caused by adding these settings globally.  
+
+This requires two tasks that are defined in the <a href="https://github.com/cloudhotspot/ansible-vwlc-role/blob/master/defaults/main.yml" target="_blank">`dhcp.yml`</a> file:
  
 {% highlight yaml %}
 {% raw %}
 ---
-- name: Start WLC
-  hosts: localhost
-  connection: local
-  roles:
-    - yaegashi.blockinfile
-  vars_files:
-    - vm_vars.yml
-    - wlc_vars.yml
-  handlers:
-    - include: handlers/vmware.yml
-  tasks:
-    - name: Start virtual machine
-      command: "'{{ vmrun_path }}' start '{{ vm_safe_dst_full_path }}/{{ vm_name }}.vmx'"
-      
-- name: Introspect Virtual Machine information
-  hosts: localhost
-  connection: local
-  roles:
-    - yaegashi.blockinfile
-  vars_files:
-    - vm_vars.yml
-  tasks:
-    - name: Get vmnet8 IP address
-      shell: ifconfig vmnet8 | awk '/inet/{print $2}'
-      register: vmnet8_ip_address
-      changed_when: False
-    - name: Get Ethernet0 MAC address
-      shell: cat '{{ vm_safe_dst_full_path }}/{{ vm_name }}.vmx' | awk -F'"' '/ethernet0.generatedAddress = /{print $2}'
-      register: vm_mac_address
-      changed_when: False
-
-- name: Configure VMWare DHCP
-  hosts: localhost
-  connection: local
-  roles:
-    - yaegashi.blockinfile
-  vars_files:
-    - vm_vars.yml
-    - wlc_vars.yml
-  handlers:
-    - include: handlers/vmware.yml
-  tasks:
-    - name: Add temporary DHCP reservation
-      blockinfile:
-        dest: '{{ dhcpd_conf_path }}'
-        insertafter: EOF
-        content: |
-          host wlc01 {
-            hardware ethernet {{ vm_mac_address.stdout }};
-            fixed-address {{ vmnet8_ip_address.stdout | regex_replace('(.*)\..*$', '\\1.127') }};
-            option domain-name-servers {{ vmnet8_ip_address.stdout | regex_replace('(.*)\..*$', '\\1.2') }};
-            option domain-name localdomain;
-            default-lease-time 1200;
-            max-lease-time 1200;  
-            option routers {{ vmnet8_ip_address.stdout | regex_replace('(.*)\..*$', '\\1.2') }};
-            next-server {{ vmnet8_ip_address.stdout }};
-          }
-      become: yes
-      notify:
-        - stop vmware networking
-        - start vmware networking
+- name: Remove previous DHCP reservations
+  blockinfile:
+    dest: '{{ wlc_dhcpd_conf_path }}'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - {{ wlc_vm_name }} {{ wlc_vm_ip_address }}"
+    content: ""
+  become: yes
+- name: Add DHCP reservation
+  blockinfile:
+    dest: '{{ wlc_dhcpd_conf_path }}'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - {{ wlc_vm_name }} {{ wlc_vm_ip_address }}"
+    insertafter: EOF
+    content: |
+      host {{ wlc_vm_name }} {
+        hardware ethernet {{ wlc_vm_mac_address }};
+        fixed-address {{ wlc_vm_ip_address }};
+        option domain-name-servers {{ wlc_vm_ip_gateway }};
+        option domain-name localdomain;
+        default-lease-time 1200;
+        max-lease-time 1200;  
+        option routers {{ wlc_vm_ip_gateway }};
+        next-server {{ wlc_host_ip_address }};
+      }
+  become: yes
+  notify:
+    - stop vmware networking
+    - start vmware networking
+    - start vm
+- meta: flush_handlers
 {% endraw %}
 {% endhighlight %}
 
-### Examining VMWare and Virtual Machine Networking
-In the `name: Introspect Virtual Machine Information` set of tasks, the `name: Get vmnet8 IP address` task determines the IP address being used for the `Share with my Mac` vmnet8 network adapter.  This interface is connected to the service port of the vWLC virtual machine, and because 
-the OS X TFTP daemon binds to all network interfaces, we can specify this IP address as the TFTP server address.
-
-The `name: Get Ethernet0 MAC address` task looks up the `ethernet0.generatedAddress` key in the virtual machine vmx file.  This key contains the MAC address generated for the service port on the vWLC virtual machine:
-
-`ethernet0.generatedAddress = "00:0c:29:0d:ec:56"`
-
-We will use this MAC address to configure a DHCP reservation for the vWLC virtual machine.
-
-> Notice that `awk` is our friend here :)  You may notice that I use `awk` and `grep` interchangeably and in general the usual differences apply.  One key difference is that `grep` always returns an error if there is no match, where as `awk` does not.  This can litter your playbook output with unsightly errors, even if you choose to ignore errors (which IMHO is an Ansible antipattern).  One way to work around the `grep` error return code issue is to add on `|| true` at the end of the `grep` command.
-
-Now before either of these tasks, note that we actually start the virtual machine in the first `name: Start virtual machine` task.  The reason for this is that the virtual machine MAC addresses are not generated until the virtual machine is first started.  Here I use the `vmrun start` command to start the virtual machine - starting at this point does not have any adverse effects, as the vWLC installation process takes 3-4 minutes before it gets to a point where it will be using DHCP. 
-
-### Configuring VMWare DHCP
-The `name: Configure VMWare DHCP` set of tasks modifies the VMWare DHCP configuration file for the vmnet8 interface.  This configuration file is located at `/Library/Preferences/VMware Fusion/vmnet8/dhcpd.conf` and an example is shown below:
+First any previous DHCP reservations are removed.  The VMWare DHCP configuration is controled by the `/Library/Preferences/VMware Fusion/vmnet8/dhcpd.conf` file and an unmodified example is shown below:
 
 {% highlight text %}
 {% raw %}
@@ -591,15 +605,15 @@ host vmnet8 {
 
 If you are familiar with the ISC DHCPD server, you'll notice this is exactly what VMWare is using for the DHCP service.  This makes it very easy to configure the DHCP server for our needs.
 
-We add a DHCP reservation for the vWLC virtual machine to the bottom of the DHCP configuration file as defined in the `name: Add temporary DHCP reservation` task.  
+We add a DHCP reservation for the vWLC virtual machine to the bottom of the DHCP configuration file as defined in the `name: Add  DHCP reservation` task.  
 
-This allows us to control the IP address allocated to the vWLC virtual machine and set DHCP Option 66 (TFTP Server) that is required for AutoInstall.  This option set using the `next-server` directive in the reservation and specifying the IP address of the vmnet8 adapter.
+This allows us to control the IP address allocated to the vWLC virtual machine and set the BOOTP next server (TFTP Server) that is required for AutoInstall.  This option set using the `next-server` directive in the reservation and specifying the IP address of the host vmnet8 adapter (`wlc_host_ip_address`).
 
-VMWare Fusion appears to use a default DHCP range of 192.168.x.128 - 192.168.x.254, so I'm reserving the IP address 192.168.x.127 for the vWLC service port. The reservation also needs to adopt the various other settings defined in the standard DHCP scope for the vmnet8 interface.
+VMWare Fusion uses a default DHCP range of x.x.x.128 - x.x.x.254, so you can reserve any IP address between 3 - 126 (x.x.x.1 and x.x.x.2 are used by VMWare).  Recall that this value is controlled by the `wlc_vm_svc_ip_octet` setting.
 
-To deploy the necessary configuration for the reservation, I'm using a <a href="https://github.com/yaegashi/ansible-role-blockinfile" target="_blank">third-party community module called yaegashi.blockinfile</a>.  This module must first be installed via Ansible Galaxy as follows:
+The DHCP reservation also needs to adopt the various other settings defined in the standard DHCP scope for the vmnet8 interface.
 
-`ansible-galaxy install yaegashi.blockinfile`
+> To deploy the necessary configuration for the reservation, I'm using a <a href="https://github.com/yaegashi/ansible-role-blockinfile" target="_blank">third-party community module called yaegashi.blockinfile</a>.  
 
 Here is an example of the DHCP configuration file with the DHCP reservation configuration appended to the end of the file:
 
@@ -648,7 +662,7 @@ host vmnet8 {
 }
 ####### VMNET DHCP Configuration. End of "DO NOT MODIFY SECTION" #######
 
-# BEGIN ANSIBLE MANAGED BLOCK
+# BEGIN ANSIBLE MANAGED BLOCK wlc01 192.168.232.127
 host wlc01 {
   hardware ethernet 00:0c:29:0d:ec:56;
   fixed-address 192.168.232.127;
@@ -659,30 +673,38 @@ host wlc01 {
   option routers 192.168.232.2;
   next-server 192.168.232.1;
 }
-# END ANSIBLE MANAGED BLOCK
+# END ANSIBLE MANAGED BLOCK wlc01 192.168.232.127
 {% endraw %}
 {% endhighlight %}
 
 The `blockinfile` module includes begin and end marker lines, which are useful for removing the inserted block later during cleanup.
 
-With the modifications made to the DHCP configuration, the `name: Add temporary DHCP reservation` task notifies a couple of handlers, defined in `handlers/vmware.yml`:
+With the modifications made to the DHCP configuration, the `name: Add temporary DHCP reservation` task notifies several handlers, defined in `handlers/main.yml`:
 
 {% highlight yaml %}
 {% raw %}
----
 - name: stop vmware networking
-  command: '"/Applications/VMware Fusion.app/Contents/Library/vmnet-cli" --stop'
+  command: '"{{ wlc_vmnet_path }}" --stop'
   become: yes
 - name: start vmware networking
-  command: '"/Applications/VMware Fusion.app/Contents/Library/vmnet-cli" --start'
+  command: '"{{ wlc_vmnet_path }}" --start'
   become: yes
+- name: start vm
+  command: '"{{ wlc_vmrun_path }}" start "{{ wlc_vm_vmx_path }}" nogui'
+  become: no
 {% endraw %}
 {% endhighlight %}
 
-These handlers restart VMWare networking using the `vmnet-cli` command (included with VMWare Fusion), allowing the DHCP configuration changes to take effect.
+These handlers restart VMWare networking using the `vmnet-cli` command (included with VMWare Fusion), allowing the DHCP configuration changes to take effect.  
+
+With the DHCP configuration in place, the virtual machine is then started to begin the AutoInstall process.
+
+> The order of handlers as defined in the handler file in Ansible is important.  I have noticed the order of execution follows the order specified in the handler file, rather than the order specified in the `notify` action of the calling task (as one might expect).
  
+> UPDATE: At this point I have also added provisioning of the local `/etc/hosts` file with the vWLC name (as defined by `wlc_vm_name`) and service port IP address (as defined by `wlc_vm_ip_address`).  This occurs by default but can be disabled by setting `wlc_vm_persist_dhcp_reservation` to `no`.
+
 ## <a name="autoinstall-cleanup"></a>Virtual Machine AutoInstall and Cleanup
-At this point, everything is in place for the (currently initialising) vWLC virtual machine to use the AutoInstall feature:
+At this point, everything is in place for the (recently booted) vWLC virtual machine to use the AutoInstall feature:
 
 - TFTP daemon is enabled and configured with a vWLC configuration file
 - VMWare DHCP server is configured to advertise the TFTP server IP address and issue a DHCP reservation to vWLC virtual machine
@@ -725,53 +747,46 @@ After installation is complete, the following tasks in the `vwlc.yml` file will 
 
 {% highlight text %}
 {% raw %}
-- name: Cleanup
-  hosts: localhost
-  connection: local
-  roles:
-    - yaegashi.blockinfile
-  vars_files:
-    - vm_vars.yml
-  handlers:
-    - include: handlers/vmware.yml
-  tasks:
-    - name: Wait for WLC to provision
-      local_action: wait_for host={{ vmnet8_ip_address.stdout | regex_replace('(.*)\..*$', '\\1.127') }} port=443 delay=10 timeout=600
-      sudo: false
-    - name: Remove temporary DHCP reservation
-      blockinfile:
-        dest: '{{ dhcpd_conf_path }}'
-        marker: "# {mark} ANSIBLE MANAGED BLOCK"
-        content: ""
-      become: yes
-      notify:
-        - stop vmware networking
-        - start vmware networking
-    - name: Remove next-server parameter from vmnet8 DHCP configuration
-      lineinfile: >
-        dest="/Library/Preferences/VMware Fusion/vmnet8/dhcpd.conf"
-        line="next-server {{ vmnet8_ip_address.stdout }};"
-        state=absent
-      become: yes
-      notify:
-        - stop vmware networking
-        - start vmware networking
-    - name: Stop TFTP daemon if it was not previously running
-      command: launchctl unload {{ tftp_plist }}
-      become: yes
-      when: tftp_daemon_status.stdout == ""
-    - name: Remove TFTP config file
-      file: >
-        path="{{ tftp_path }}/ciscowlc.cfg"
-        state=absent
+---
+- name: Wait for vWLC to provision
+  local_action: wait_for host={{ wlc_vm_ip_address }} port=443 delay=10 timeout=600
+  sudo: false
+- name: Remove DHCP reservation
+  blockinfile:
+    dest: '{{ wlc_dhcpd_conf_path }}'
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - {{ wlc_vm_name }} {{ wlc_vm_ip_address }}"
+    content: ""
+  become: yes
+  when: not wlc_vm_persist_dhcp_reservation
+  notify:
+    - stop vmware networking
+    - start vmware networking
+- name: Remove TFTP plist file
+  file: >
+    path="{{ wlc_tftp_plist }}"
+    state=absent
+  notify:
+    - stop system tftp daemon
+    - restore previous system tftp daemon
+  become: yes
+- name: Remove TFTP config file
+  file: >
+    path="{{ wlc_tftp_path }}/ciscowlc.cfg"
+    state=absent
+  notify:
+    - stop system tftp daemon
+    - restore previous system tftp daemon
+  become: yes
 {% endraw %}
 {% endhighlight %}
 
-The playbook is configured wait for the vWLC virtual machine to come online with the `name: Wait for WLC to provision` task.  This task attempts to establish a TCP connection to port 443 on the vWLC virtual machine service port IP address (hence why we need to setup a DHCP reservation). 
+The playbook is configured wait for the vWLC virtual machine to come online with the `name: Wait for WLC to provision` task.  This task attempts to establish a TCP connection to port 443 on the vWLC virtual machine service port IP address. 
 
 > You might be tempted to use port 22 to determine if the vWLC virtual machine is fully provisioned.  The vWLC leaves port 22 open during the AutoInstall process allowing the task to establish a TCP connection, hence using port 22 would mean playbook would think provisioning has finished at a much earlier time.  Port 443 (HTTPS) is only activated once provisioning is fully complete, hence gives a more reliable indication that provisioning is complete.
 
-Once the provisioning is completed, a series of cleanup tasks takes place.  This cleanup removes the various DHCP and TFTP configurations and files, ensuring your VMWare networking configuration is restored to its previous state.
+Once the provisioning is completed, a series of cleanup tasks takes place.  
+
+This cleanup removes the DHCP reservation (by default this task is skipped unless `wlc_vm_persist_dhcp_reservation` is set to `no`), the TFTP plist file, and the TFTP WLC configuration file.    
 
 ## Wrap Up
 Well this has been a very long article, but hopefully you have some good insights into how you Ansible can automate deployment of the Cisco Virtual Wireless Controller.
