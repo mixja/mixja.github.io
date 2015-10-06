@@ -21,7 +21,7 @@ published: true
 
 ## Introduction
 
-**UPDATE 6th October, 2015: I have refactored the original playbook that was the subject of this article into a reusable Ansible Galaxy role.  This article has been updated accordingly and has numerous changes from the original article.**
+**UPDATE 6th October, 2015: I have refactored the original playbook that was the subject of this article into a reusable <a href="https://galaxy.ansible.com/list#/roles/5387" target="_blank">Ansible Galaxy role</a>.  This article has been updated accordingly and has numerous changes from the original article.**
 
 Outside of Docker, <a href="http://www.ansible.com" target="_blank">Ansible</a> seems to be one of the hottest DevOps tools these days.  
 
