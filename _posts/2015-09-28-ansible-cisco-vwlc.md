@@ -19,17 +19,14 @@ image:
 published: true
 ---
 
-## Introduction
-
-**UPDATE 6th October, 2015: I have refactored the original playbook that was the subject of this article into a reusable <a href="https://galaxy.ansible.com/list#/roles/5387" target="_blank">Ansible Galaxy role</a>.  This article has been updated accordingly and has numerous changes from the original article.**
-
-Outside of Docker, <a href="http://www.ansible.com" target="_blank">Ansible</a> seems to be one of the hottest DevOps tools these days.  
+In this article, I will describe how to deploy Cisco's Virtual Wireless Controller (vWLC) on VMWare Fusion using Ansible.
 
 Although Ansible is most often used for deploying infrastructure and applications or orchestrating continuous delivery workflows, it can be used to automate almost any task.
+  
+I will create an Ansible playbook that will automate all of the manual tasks you would normally take to get the vWLC up and running.
 
-In this article, I will describe how to deploy Cisco's Virtual Wireless Controller (vWLC) on VMWare Fusion using the OVA appliance image that is generally available to registered CCO users.  
-
-I will create an Ansible playbook that will automate all of the manual tasks you would normally take to get the vWLC up and running.     
+**UPDATE 6th October, 2015: I have refactored the original playbook that was the subject of this article into a reusable <a href="https://galaxy.ansible.com/list#/roles/5387" target="_blank">Ansible Galaxy role</a>.  This article has been updated accordingly and has numerous changes from the original article.**
+     
 
 ## Cisco Virtual Wireless Controller
 

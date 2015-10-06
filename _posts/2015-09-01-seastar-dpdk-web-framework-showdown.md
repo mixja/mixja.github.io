@@ -14,10 +14,12 @@ tags:
   - node.js
   - sdn
   - nfv
+image:
+  feature: dragons-bg.jpg
+  credit: Keith Cuddeback
+  creditlink: https://www.flickr.com/photos/in2photos/7198977392/
 published: true
 ---
-
-## Introduction
 
 [In my last post](http://pseudo.co.de/dpdk-on-an-intel-nuc/), I introduced Seastar and DPDK and how to run Seastar with DPDK on an Intel NUC.
 

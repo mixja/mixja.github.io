@@ -17,10 +17,9 @@ image:
 published: true
 ---
 
-## Introduction
-In my <a href="http://pseudo.co.de/ansible-cisco-vwlc" target="_blank">last post</a>, I described how to automate the deployment of the Cisco Virtual Wireless Controller in an OS X VMWare Fusion environment using Ansible.
+In my <a href="http://pseudo.co.de/ansible-cisco-vwlc" target="_blank">last post</a>, I described how to automate the deployment of the Cisco Virtual Wireless Controller in an OS X VMWare Fusion environment using Ansible.  
 
-In this article, I will discuss how you can automate deployment of the Cisco Cloud Services Router (CSR) 1000v using VMWare Fusion and Ansible.  
+In this article, I will discuss how you can automate deployment of the Cisco Cloud Services Router (CSR) 1000v using VMWare Fusion and Ansible.
 
 As you will see, the deployment for the CSR 1000V is quite different from the Cisco Virtual Wireless Controller.
 

@@ -10,10 +10,12 @@ tags:
   - nuc
   - sdn
   - nfv
+image:
+  feature: seastar-bg.jpg
+  credit: Carolina Ponce
+  creditlink: https://www.flickr.com/photos/carolinandrea_pg/4056255289/in/photolist-7brno2-hmRc2Q-atD114-bE7ngL-8oRaq6-qyXsH-8oUEvQ-fByQKd-c8kP9s-3RkTN-72fgBP-8uNkfn-95M9NW-dJQBKt-kZKz4-8X8Bdt-9dfvov-4ehStz-8yxBu-vzJuye-8GBDaJ-5NEcB-5dkjdQ-DqeiS-6PzK8p-rVTNTb-8wpSrg-2MJyQS-4vkn4q-Wpj-9ikFCy-7JcvGZ-8oR9ni-4thVn4-daPKLP-9YcRxq-iwGaHW-5oDZYz-e1FuHV-FK4zW-8BXA-rm6xYK-vWaqN5-8q7J9C-aqNPLW-4yaB2c-7Yy6Cd-7opWse-hmQHpV-9UWoCw
 published: true
 ---
-
-## Introduction
 
 The DPDK (Data Plane Development Kit) is an exciting project that delivers high performance networking by allowing low-level networking functions to be performed in user space applications, instead of in the Linux kernel.  
 
