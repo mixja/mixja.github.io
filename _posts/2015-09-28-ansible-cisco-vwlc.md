@@ -79,7 +79,7 @@ To run the playbook:
 
 And to run the playbook and overwrite a previous installation:
 
-`ansible-playbook site.yml --extra-vars csr_vm_overwrite=true`     
+`ansible-playbook site.yml --extra-vars wlc_vm_overwrite=true`     
 
 ## Workflow
 
@@ -163,11 +163,11 @@ So the VM location will be `/path/to/vm/root/wlc01.vmwarevm` assuming a VM name 
 
 Note I'm using a calculated `vm_safe_dst_full_path` variable, which is derived from the above convention.  This variable is manipulated to ensure we get the correct full path without any duplicate forward slashes. 
 
-If the VM location already exists, the entire playbook is configured to fail in the `name: Fail if VM path exists` task, unless the `csr_vm_overwrite` variable is defined with any value.  
+If the VM location already exists, the entire playbook is configured to fail in the `name: Fail if VM path exists` task, unless the `wlc_vm_overwrite` variable is defined with any value.  
 
 This approach protects you from accidentally overwriting an existing virtual machine, but still allows you to explicitly overwrite it if that is your intention as demonstrated below:
 
-`$ ansible-playbook site.yml --extra-vars csr_vm_overwrite=true`
+`$ ansible-playbook site.yml --extra-vars wlc_vm_overwrite=true`
 
 ### Creating the VM Location
 
@@ -194,7 +194,7 @@ With initial facts set and checks out of the way, the `create_vm.yml` tasks crea
 {% endraw %}
 {% endhighlight %}
 
-Before creating the VM location I check if there is an existing VM running (assuming the VM location already exists and `csr_vm_overwrite` has been defined).  
+Before creating the VM location I check if there is an existing VM running (assuming the VM location already exists and `wlc_vm_overwrite` has been defined).  
 
 As the intention in this scenario is to overwrite an existing VM, we need to first stop the VM (if it is running) in order to remove the existing VM folder and files.
 
