@@ -724,7 +724,7 @@ One quirk of the vWLC virtual machine is that you have to explicitly enable cons
   <img src="/images/vwlc-press-any-key.png" alt="vWLC press any key">
 </figure>
 
-At approximately T=2:30 the setup wizard will be displayed.  This allows you to manually configure the vWLC, which we obviously don't do in this case:
+After approximately two and a half minutes since first boot the setup wizard will be displayed.  This allows you to manually configure the vWLC, which we obviously don't do in this case:
 <figure>
   <img src="/images/vwlc-setup-wizard.png" alt="vWLC Setup Wizard">
 </figure>
