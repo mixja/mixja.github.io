@@ -384,7 +384,7 @@ In the `name: Deploy TFTP plist` task, a Jinja 2 template is used to configure t
 
 The template enables the TFTP server by setting the `<key>Disabled</key>` value to `<false/>` and also includes the `wlc_tftp_path` variable (`/Users/Shared/tftp` by default) to specify the folder that the TFTP server should serve.  The `name: Ensure TFTP path exists` task ensures this folder is present.
 
-The `name: Deploy WLC file` task then deploys the Cisco vWLC configuration file that will served via TFTP.  The playbook allows you to provide your own config file by setting the `wlc_config_file` variable - if this variable is not defined, the playbook deploys a basic configuration derived from the following template:
+The `name: Deploy WLC file` task then deploys the Cisco vWLC configuration file that will served via TFTP.  The playbook allows you to provide your own config file by setting the `wlc_config_file` variable - if this variable is not defined, the playbook deploys a basic configuration derived from the `templates/ciscowlc.cfg.j2` template:
 
 {% highlight text %}
 {% raw %}
@@ -551,7 +551,7 @@ This requires two tasks that are defined in the <a href="https://github.com/clou
 {% endraw %}
 {% endhighlight %}
 
-First any previous DHCP reservations are removed.  The VMWare DHCP configuration is controled by the `/Library/Preferences/VMware Fusion/vmnet8/dhcpd.conf` file and an unmodified example is shown below:
+First any previous DHCP reservations are removed.  The VMWare DHCP configuration is controlled by the `/Library/Preferences/VMware Fusion/vmnet8/dhcpd.conf` file and an unmodified example is shown below:
 
 {% highlight text %}
 {% raw %}
