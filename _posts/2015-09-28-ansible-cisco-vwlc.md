@@ -676,7 +676,7 @@ host wlc01 {
 
 The `blockinfile` module includes begin and end marker lines, which are useful for removing the inserted block later during cleanup.
 
-With the modifications made to the DHCP configuration, the `name: Add temporary DHCP reservation` task notifies several handlers, defined in `handlers/main.yml`:
+With the modifications made to the DHCP configuration, the `name: Add DHCP reservation` task notifies several handlers, defined in `handlers/main.yml`:
 
 {% highlight yaml %}
 {% raw %}
